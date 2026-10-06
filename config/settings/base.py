@@ -19,6 +19,7 @@ INSTALLED_APPS = [
     "apps.accounts",
     "apps.schools",
     "apps.academics",
+    "apps.core",
 ]
 
 MIDDLEWARE = [
@@ -29,6 +30,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "apps.schools.middleware.ActiveSchoolMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
