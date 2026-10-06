@@ -11,11 +11,20 @@
   <header class="border-b bg-white">
     <div class="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
       <a href="/" class="text-lg font-semibold text-indigo-700">School Platform</a>
-      <span class="text-sm text-slate-500">
-        {% if request.school %}{{ request.school.name }}{% endif %}
-      </span>
+      <div class="flex items-center gap-4 text-sm text-slate-500">
+        {% if request.school %}<span>{{ request.school.name }}</span>{% endif %}
+        {% if user.is_authenticated %}
+          <form method="post" action="{% url 'accounts:logout' %}">
+            {% csrf_token %}
+            <button type="submit" class="font-medium text-indigo-700 hover:underline">Log out</button>
+          </form>
+        {% else %}
+          <a href="{% url 'accounts:login' %}" class="font-medium text-indigo-700 hover:underline">Log in</a>
+        {% endif %}
+      </div>
     </div>
   </header>
+
   <main class="mx-auto max-w-5xl px-4 py-8">
     {% block content %}{% endblock %}
   </main>

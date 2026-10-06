@@ -1,17 +1,13 @@
-from .models import Membership
+from .selectors import active_memberships
 
 SESSION_KEY = "active_membership_id"
-
 def resolve_membership(request):
     """Return the Membership the user is acting under, or None."""
-
     user = request.user
     if not user.is_authenticated:
         return None
 
-    memberships = Membership.objects.filter(
-        user=user, is_active=True, school__is_active=True
-    ).select_related("school")
+    memberships = active_memberships(user)
 
     chosen_id = request.session.get(SESSION_KEY)
     if chosen_id:
