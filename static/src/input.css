@@ -1,1 +1,17 @@
 @import "tailwindcss";
+
+@theme {
+  --color-brand-50: #CCFBF1;
+  --color-brand-600: #0F766E;
+  --color-brand-700: #115E59;
+  --color-page: #F4F6F3;
+  --color-ink: #0F172A;
+  --color-line: #E2E8F0;
+}
+
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--color-brand-600);
+    outline-offset: 2px;
+  }
+}

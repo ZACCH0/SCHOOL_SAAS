@@ -7,19 +7,19 @@
   <title>{% block title %}School Platform{% endblock %}</title>
   <link rel="stylesheet" href="{% static 'css/output.css' %}">
 </head>
-<body class="min-h-screen bg-slate-50 text-slate-800">
-  <header class="border-b bg-white">
+<body class="min-h-screen bg-page text-ink">
+   <header class="border-b border-line bg-white">
     <div class="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-      <a href="/" class="text-lg font-semibold text-indigo-700">School Platform</a>
+      <a href="/" class="text-lg font-semibold text-brand-700">School Platform</a>
       <div class="flex items-center gap-4 text-sm text-slate-500">
         {% if request.school %}<span>{{ request.school.name }}</span>{% endif %}
         {% if user.is_authenticated %}
           <form method="post" action="{% url 'accounts:logout' %}">
             {% csrf_token %}
-            <button type="submit" class="font-medium text-indigo-700 hover:underline">Log out</button>
+            <button type="submit" class="font-medium text-brand-700 hover:underline">Log out</button>
           </form>
         {% else %}
-          <a href="{% url 'accounts:login' %}" class="font-medium text-indigo-700 hover:underline">Log in</a>
+          <a href="{% url 'accounts:login' %}" class="font-medium text-brand-700 hover:underline">Log in</a>
         {% endif %}
       </div>
     </div>
