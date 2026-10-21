@@ -1,0 +1,5 @@
+<div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-line">
+  <p class="text-sm text-slate-600">{{ label }}</p>
+  <p class="mt-1 text-3xl font-bold tracking-tight {% if tone == 'warn' %}text-amber-700{% endif %}">{{ value }}</p>
+  {% if hint %}<p class="mt-1 text-sm text-slate-500">{{ hint }}</p>{% endif %}
+</div>

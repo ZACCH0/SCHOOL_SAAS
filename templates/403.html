@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+
+{% block title %}No access{% endblock %}
+
+{% block content %}
+  {% url 'core:dashboard' as back_url %}
+  {% include "components/empty_state.html" with title="You do not have access to this page" text="Your account does not have permission. If this looks wrong, contact your school admin." action_url=back_url action_label="Back to dashboard" %}
+{% endblock %}
