@@ -51,4 +51,8 @@ def test_full_reset_flow_changes_password(client, parent):
     assert response.url == reverse("accounts:password_reset_complete")
     parent.refresh_from_db()
     assert parent.check_password(NEW_PASSWORD)
-    assert client.login(username="parent1", password=NEW_PASSWORD)
+    response = client.post(
+        reverse("accounts:login"), {"username": "parent1", "password": NEW_PASSWORD}
+    )
+    assert response.status_code == 302
+    assert "_auth_user_id" in client.session

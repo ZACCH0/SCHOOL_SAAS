@@ -1,5 +1,5 @@
+from datetime import timedelta
 from pathlib import Path
-
 from decouple import Csv, config
 
 # base.py is three levels below the project root now
@@ -20,7 +20,10 @@ INSTALLED_APPS = [
     "apps.schools",
     "apps.academics",
     "apps.core",
-
+    "axes",
+    "apps.audit",
+    
+    
 ]
 
 MIDDLEWARE = [
@@ -32,6 +35,8 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "apps.schools.middleware.ActiveSchoolMiddleware",
+    "axes.middleware.AxesMiddleware",
+    
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -80,6 +85,17 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 AUTH_USER_MODEL = "accounts.User"
+AUTHENTICATION_BACKENDS = [
+    "axes.backends.AxesStandaloneBackend",  # must come first
+    "django.contrib.auth.backends.ModelBackend",
+]
+
+AXES_FAILURE_LIMIT = 5
+AXES_COOLbOFF_TIME = timedelta(minutes=15)
+AXES_LOCKOUT_PARAMETERS = [["username", "ip_address"]]  # lock the pair, not just the IP
+AXES_RESET_ON_SUCCESS = True
+AXES_LOCKOUT_TEMPLATE = "accounts/locked_out.html"
+
 LOGIN_URL = "accounts:login"
 LOGIN_REDIRECT_URL = "core:dashboard"
 LOGOUT_REDIRECT_URL = "core:home"

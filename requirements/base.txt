@@ -1,4 +1,4 @@
 Django>=5.2,<5.3
 psycopg[binary]
 python-decouple
-
+django-axes == 8.3.1

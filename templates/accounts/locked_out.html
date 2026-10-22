@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+
+{% block title %}Too many attempts{% endblock %}
+
+{% block content %}
+  {% url 'accounts:password_reset' as reset_url %}
+  {% include "components/empty_state.html" with title="Too many failed attempts" text="For your security this account is locked for 15 minutes. If you forgot your password, reset it, or ask your school admin." action_url=reset_url action_label="Reset password" %}
+{% endblock %}
