@@ -1,6 +1,6 @@
+from django.core.exceptions import ValidationError
 from django.conf import settings
 from django.db import models
-
 # Create your models here.
 
 class School(models.Model):
@@ -21,7 +21,6 @@ class School(models.Model):
 
     def __str__(self):
         return self.name
-
 
 class Membership(models.Model):
     """Links a user to a school with one role."""
@@ -76,6 +75,28 @@ class SchoolOwnedModel(models.Model):
     )
 
     objects = SchoolQuerySet.as_manager()
-
+    
+    def ensure_same_school(self, *names):
+        """Raise a ValidationError if any named related record is from another school."""
+        for name in names:
+            if getattr(self, f"{name}_id") is None:
+                continue
+            related = getattr(self, name)
+            if related.school_id != self.school_id:
+                raise ValidationError(
+                    f"The {name.replace('_', ' ')} belongs to a different school."
+                )
+  
+      
     class Meta:
         abstract = True    
+ 
+class ValidatedSchoolModel(SchoolOwnedModel):
+    """School-owned model that runs clean() on every save, so cross-record rules always apply."""
+
+    class Meta:
+        abstract = True
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)   

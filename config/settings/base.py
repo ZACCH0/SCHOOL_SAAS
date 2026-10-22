@@ -22,7 +22,9 @@ INSTALLED_APPS = [
     "apps.core",
     "axes",
     "apps.audit",
-    
+    "apps.classes",
+    "apps.subjects",
+
     
 ]
 
