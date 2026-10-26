@@ -4,6 +4,7 @@
 {% block title %}Fee structure{% endblock %}
 
 {% block content %}
+  {% include "partials/fees_tabs.html" %}
   {% if no_session %}
     {% include "components/page_header.html" with crumb="Fees / Structure" title="Fee structure" %}
     <p class="rounded-lg bg-amber-100 px-4 py-3 text-sm text-warn">There is no current session yet.</p>

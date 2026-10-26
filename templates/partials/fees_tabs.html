@@ -1,0 +1,12 @@
+<div class="mb-4 flex flex-wrap gap-2">
+  {% url 'fees:home' as fees_home_url %}
+  {% url 'fees:structure' as fees_structure_url %}
+  {% url 'fees:invoice_list' as fees_invoices_url %}
+  {% url 'fees:payment_list' as fees_payments_url %}
+  <a href="{{ fees_home_url }}" class="rounded-lg px-3 py-2 text-sm font-semibold {% if request.path == fees_home_url %}bg-brand-600 text-white{% else %}bg-white text-brand-700 ring-1 ring-line{% endif %}">Overview</a>
+  {% if request.membership.role == 'owner' or request.membership.role == 'admin' %}
+    <a href="{{ fees_structure_url }}" class="rounded-lg px-3 py-2 text-sm font-semibold {% if request.path == fees_structure_url %}bg-brand-600 text-white{% else %}bg-white text-brand-700 ring-1 ring-line{% endif %}">Fee structure</a>
+  {% endif %}
+  <a href="{{ fees_invoices_url }}" class="rounded-lg px-3 py-2 text-sm font-semibold {% if '/invoices/' in request.path %}bg-brand-600 text-white{% else %}bg-white text-brand-700 ring-1 ring-line{% endif %}">Invoices</a>
+  <a href="{{ fees_payments_url }}" class="rounded-lg px-3 py-2 text-sm font-semibold {% if '/payments/' in request.path and 'receipt' not in request.path %}bg-brand-600 text-white{% else %}bg-white text-brand-700 ring-1 ring-line{% endif %}">Payments</a>
+</div>

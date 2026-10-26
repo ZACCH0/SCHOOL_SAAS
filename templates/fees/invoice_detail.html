@@ -4,6 +4,7 @@
 {% block title %}{{ invoice.number }}{% endblock %}
 
 {% block content %}
+  {% include "partials/fees_tabs.html" %}
   {% include "components/page_header.html" with crumb="Fees / Invoices" title=invoice.number subtitle=invoice.period.name %}
 
   <div class="mb-5 grid gap-3 md:grid-cols-2">
