@@ -29,7 +29,7 @@ Statuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 | T10 | Attendance | DONE (unverified by owner in browser) | T10a model, T10b services, T10c pages. 227 tests passed on 2026-10-26; tenant isolation, role matrix, audit and read-only history covered |
 | T11 | Admissions | TODO | |
 | T12 | Assessments, results, grading, workflow, report cards (PDF) | TODO | |
-| T13 | Finance: fee structures, invoices, payments, receipts, balances | TODO | |
+| T13 | Finance: fee structures, invoices, payments, receipts, balances | IN PROGRESS | T13a data model DONE (9 tests passed 2026-10-26). T13b services next |
 | T14 | Dashboards, announcements, notifications, timetable | TODO | |
 | T15 | Documents, analytics, audit log | TODO | |
 | T16 | Security hardening (login attempt limiting, backups, file security, production settings) | TODO | |
