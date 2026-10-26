@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Classes{% endblock %}
+
+{% block content %}
+  {% url 'classes:create' as new_url %}
+  {% include "components/page_header.html" with title="Classes" subtitle="The classes your school runs." action_url=new_url action_label="Add class" %}
+  {% if classes %}
+    <div class="overflow-x-auto rounded-2xl bg-white shadow-sm ring-1 ring-line">
+      <table class="w-full text-left text-sm">
+        <thead class="border-b border-line bg-slate-50 text-xs uppercase text-slate-500">
+          <tr>
+            <th class="px-4 py-3">Class</th>
+            <th class="px-4 py-3">Level</th>
+            <th class="px-4 py-3">Sections</th>
+            <th class="px-4 py-3">Status</th>
+            <th class="px-4 py-3"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for school_class in classes %}
+            <tr class="border-b border-line">
+              <td class="px-4 py-3 font-semibold">{{ school_class.name }}</td>
+              <td class="px-4 py-3">{{ school_class.level.name }}</td>
+              <td class="px-4 py-3">{% for section in school_class.sections.all %}{{ section.name }}{% if not forloop.last %}, {% endif %}{% empty %}-{% endfor %}</td>
+              <td class="px-4 py-3">
+                {% if school_class.is_active %}
+                  {% include "components/status_chip.html" with kind="ok" label="Active" %}
+                {% else %}
+                  {% include "components/status_chip.html" with kind="neutral" label="Not active" %}
+                {% endif %}
+              </td>
+              <td class="px-4 py-3 text-right"><a class="font-semibold text-brand-700" href="{% url 'classes:detail' school_class.pk %}">Open</a></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    {% include "components/empty_state.html" with title="No classes yet" text="Add your first class to get started." action_url=new_url action_label="Add class" %}
+  {% endif %}
+{% endblock %}

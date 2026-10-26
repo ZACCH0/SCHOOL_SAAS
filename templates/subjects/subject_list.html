@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Subjects{% endblock %}
+
+{% block content %}
+  {% url 'subjects:create' as new_url %}
+  {% include "components/page_header.html" with title="Subjects" subtitle="The subjects your school teaches." action_url=new_url action_label="Add subject" %}
+  {% if subjects %}
+    <div class="overflow-x-auto rounded-2xl bg-white shadow-sm ring-1 ring-line">
+      <table class="w-full text-left text-sm">
+        <thead class="border-b border-line bg-slate-50 text-xs uppercase text-slate-500">
+          <tr><th class="px-4 py-3">Subject</th><th class="px-4 py-3">Code</th><th class="px-4 py-3">Status</th><th class="px-4 py-3"></th></tr>
+        </thead>
+        <tbody>
+          {% for subject in subjects %}
+            <tr class="border-b border-line">
+              <td class="px-4 py-3 font-semibold">{{ subject.name }}</td>
+              <td class="px-4 py-3">{{ subject.code|default:"-" }}</td>
+              <td class="px-4 py-3">
+                {% if subject.is_active %}
+                  {% include "components/status_chip.html" with kind="ok" label="Active" %}
+                {% else %}
+                  {% include "components/status_chip.html" with kind="neutral" label="Not active" %}
+                {% endif %}
+              </td>
+              <td class="px-4 py-3 text-right">
+                <a class="font-semibold text-brand-700" href="{% url 'subjects:edit' subject.pk %}">Edit</a>
+                <form method="post" action="{% url 'subjects:toggle' subject.pk %}" class="ml-3 inline">
+                  {% csrf_token %}
+                  <button type="submit" class="font-semibold text-brand-700">{% if subject.is_active %}Deactivate{% else %}Activate{% endif %}</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    {% include "components/empty_state.html" with title="No subjects yet" text="Add the subjects your school teaches." action_url=new_url action_label="Add subject" %}
+  {% endif %}
+{% endblock %}

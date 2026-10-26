@@ -1,10 +1,24 @@
 from django.urls import reverse
 
+from apps.schools.models import Membership
+
+Role = Membership.Role
+MANAGERS = [Role.OWNER, Role.ADMIN]
+
 # (label, url name, allowed roles). None means every role.
 # Add one line here when a module's page exists.
 NAV_ITEMS = [
     ("Dashboard", "core:dashboard", None),
+    ("Classes", "classes:list", MANAGERS),
+    ("Subjects", "subjects:list", MANAGERS),
 ]
+
+
+def _is_active(url_name, current):
+    if url_name == current:
+        return True
+    namespace = url_name.split(":")[0]
+    return namespace != "core" and current.split(":")[0] == namespace
 
 
 def nav_for(request, membership):
@@ -14,6 +28,6 @@ def nav_for(request, membership):
         if roles is not None and membership.role not in roles:
             continue
         items.append(
-            {"label": label, "url": reverse(url_name), "active": url_name == current}
+            {"label": label, "url": reverse(url_name), "active": _is_active(url_name, current)}
         )
     return items
