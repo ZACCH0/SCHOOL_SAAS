@@ -4,8 +4,8 @@ Single source of truth for where the project stands. Rules for updating it are i
 
 **Last updated:** 2026-10-26
 **Current phase:** Phase 3 wrap-up of classes and subjects (T8)
-**Current task:** T9c student pages built (list with search/status/class filters + pagination, add/edit forms, detail page with status, class move, class history, guardians; sidebar "Students" for owner/admin; 199 tests passing; CSS rebuilt; browser-checked live). Not yet verified by owner in the browser.
-**Next task:** Owner checks the Students screens, then T10 Attendance. Push still pending owner approval; student pages then go to the UI agent for design-canvas styling.
+**Current task:** T9 Students & parents fully verified by owner (admission numbers stay manual). Push pending owner approval (several commits ahead of origin).
+**Next task:** T10 Attendance (data model first, like T8a/T9a: present/absent/late/excused per class per period, statistics, history), then finance T13. UI styling pass for all modules once attendance lands.
 
 ## Task board
 
@@ -25,7 +25,7 @@ Statuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 | T7c | Password reset (email based) | DONE (verified) | 53 passed |
 | T7d | Admin resets a user's password (temporary password, forced change) for users without email | TODO (proposed) | Owner has not yet approved |
 | T8 | Classes, sections, levels (Primary/JSS/SS activatable), subjects, class subjects, teacher assignments per session, class teacher | DONE (unverified by owner in browser) | T8a DONE (verified, 118 passed). T8b-1 services DONE (verified, 141 passed). T8b-2 views, forms, templates DONE (verified, 162 passed on 2026-10-26). Owner chose sections as a separate table (option A) |
-| T9 | Students and parents (parent with many children, history across promotions) | DONE (unverified by owner in browser) | T9a data model DONE (176 passed). T9b services DONE (186 passed). T9c pages DONE (199 passed on 2026-10-26). Tenant isolation, role checks and audit verified in tests |
+| T9 | Students and parents (parent with many children, history across promotions) | DONE (verified by owner) | T9a data model, T9b services, T9c pages. 199 tests passed; owner consulted on admission numbers: manual entry stays, no auto-numbering for now |
 | T10 | Attendance | TODO | |
 | T11 | Admissions | TODO | |
 | T12 | Assessments, results, grading, workflow, report cards (PDF) | TODO | |
