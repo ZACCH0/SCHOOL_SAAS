@@ -40,7 +40,7 @@ Types: **REQ** = product requirement, **TECH** = implementation rule, **FUTURE**
 5. [ ] Assessments and results (configurable components and grade scales; calculated totals/grades/remarks; configurable ranking)
 6. [ ] Result workflow: Draft, Submitted, Reviewed, Approved, Published; no silent edits after publish; audit record for changes
 7. [ ] Report cards (PDF)
-8. [ ] Finance: fee structure, invoice, invoice items, payments, payment allocation, receipt, balance (full and partial payment, manual recording)
+8. [x] Finance: fee structure, invoice, invoice items, payments, payment allocation, receipt, balance (full and partial payment, manual recording) — DONE (unverified in browser) 2026-10-26
 9. [ ] Dashboards (admin, teacher, parent) using real data only
 10. [ ] Announcements and in-app notifications
 11. [ ] Timetable
