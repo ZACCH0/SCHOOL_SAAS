@@ -4,8 +4,8 @@ Single source of truth for where the project stands. Rules for updating it are i
 
 **Last updated:** 2026-10-26
 **Current phase:** Phase 3 wrap-up of classes and subjects (T8)
-**Current task:** Attendance permission tightened after owner decision: **form teacher only** may mark a register (subject teachers will mark scores in T12 instead); teacher home now lists only their form classes. 228 tests passed 2026-10-26, check clean, live-verified that mrs_ogunleye now sees only Primary 1 A and Primary 6 A. Attendance module complete pending Owner browser verification.
-**Next task:** Owner verifies attendance in the browser, then T13 Finance (fee structures, invoices, payments). Push pending owner approval.
+**Current task:** Attendance restyled to the canvas design (design tokens added to `input.css`: muted/ok/bad/warn/info; chip component now semantic; attendance home = stat cards Present %, Registers taken x of y, Absent count + table on desktop with Class/Teacher/Register/Present columns, stacked cards on phones; register page = teal header, count chips, pupil cards with 44px P/A/L/E squares (green/red/amber/slate filled when active) + remark input per pupil; instant-save kept instead of the canvas Save button). 228 tests passing. Owner browser verification of attendance UI pending.
+**Next task:** Owner verifies attendance UI in browser (hard-refresh Ctrl+Shift+R), then T13 Finance (fee structures, invoices, payments) built already in canvas style from the fees PNGs. Push pending owner approval.
 
 ## Task board
 
@@ -47,6 +47,15 @@ Statuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 | T21 | School public home page with gallery, news, admissions; own subdomain per school | TODO | Build after T9 to T13 |
 
 ## Task log (newest first)
+
+### Attendance styled to the canvas (2026-10-26, 228 passed)
+- Design canvas added to repo (62 screens + design system); workflow decision: style each module as we build it, tokens/components change in one place
+- `static/src/input.css`: new tokens muted #475569, ok #15803D, bad #B91C1C, warn #B45309, info #1D4ED8; `status_chip.html` now uses them (with optional dot)
+- Attendance home matches "Attendance overview.png": stat cards (Present %, Registers taken x of y, Absent), desktop table (Class, Teacher, Register chip Taken/Not taken, Present "n of m", Open/Mark actions), phone cards below md; day stats and per-register present counts computed from real data in the view
+- Register page matches "Attendance register (phone).png": teal header band, Present/Absent/Late/Excused count chips, pupil cards with one 44px P/A/L/E square per status (filled green/red/amber/slate when active), remark input; instant save per tap kept (deliberate difference from canvas batch save), read-only shows chips
+- Decision: statuses keep full words in read-only chips (design rule: never colour alone); canvas "Not marked" wording became "Not taken"
+- Test wording updated ("Not marked" -> "Not taken"); live-checked with owner and teacher data
+
 
 ### Attendance permission: form teacher only (2026-10-26, 228 passed)
 - Owner decision matches real school operation: the daily register is marked by the form teacher; subject teachers will get their own "my classes + subjects" score views in T12

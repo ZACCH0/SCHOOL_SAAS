@@ -13,7 +13,7 @@ from apps.schools.permissions import MANAGE_STRUCTURE_ROLES, role_required
 from apps.schools.models import Membership
 
 from .forms import OPEN_STATUSES, OpenRegisterForm
-from .models import AttendanceSession
+from .models import AttendanceRecord, AttendanceSession
 from .services import mark_student, open_register
 
 manager_only = role_required(*MANAGE_STRUCTURE_ROLES)
@@ -69,12 +69,47 @@ def attendance_home(request):
             .first()
         )
         choice["register"] = exists
+
+    teacher_for = {}
+    for link in ClassTeacher.objects.for_school(request.school).filter(session=session):
+        key = link.school_class_id if link.section_id else None
+        teacher_for.setdefault(
+            (link.school_class_id, key),
+            (link.teacher.user.get_full_name() or link.teacher.user.username),
+        )
+    for choice in choices:
+        c, s = choice["school_class"], choice["section"]
+        choice["teacher"] = teacher_for.get((c.id, s.id if s else None)) or teacher_for.get((c.id, None)) or "-"
+
+    counts = {"present": 0, "late": 0, "absent": 0, "excused": 0}
+    per_register = {}
+    registers_open = [c["register"] for c in choices if c["register"]]
+    if registers_open:
+        for line in AttendanceRecord.objects.filter(register__in=registers_open):
+            counts[line.status] = counts.get(line.status, 0) + 1
+            stat = per_register.setdefault(line.register_id, {"present": 0, "total": 0})
+            stat["total"] += 1
+            if line.status == "present":
+                stat["present"] += 1
+    for choice in choices:
+        if choice["register"]:
+            stat = per_register.get(choice["register"].pk)
+            choice["present_label"] = f"{stat['present']} of {stat['total']}" if stat else "0 of 0"
+        else:
+            choice["present_label"] = None
+    counted = sum(counts.values())
+    stats = {
+        "taken": len(registers_open),
+        "expected": len(choices),
+        "counts": counts,
+        "pct": round(counts["present"] * 100 / counted) if counted else None,
+    }
     return render(
         request, "attendance/home.html",
         {
             "session": session, "chosen_day": chosen_day, "choices": choices,
             "is_manager": request.membership.role in MANAGE_STRUCTURE_ROLES,
-            "today": date.today(),
+            "today": date.today(), "stats": stats,
         },
     )
 

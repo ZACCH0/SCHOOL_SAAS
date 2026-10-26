@@ -71,7 +71,7 @@ def test_admin_sees_every_class_and_a_fresh_day_is_not_marked(
     login_as(school_a)
     content = client.get(reverse("attendance:home"), {"day": DAY.isoformat()}).content
     assert b"Primary 3" in content
-    assert b"Not marked" in content
+    assert b"Not taken" in content
 
 
 @pytest.mark.django_db
