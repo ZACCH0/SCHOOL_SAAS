@@ -4,8 +4,8 @@ Single source of truth for where the project stands. Rules for updating it are i
 
 **Last updated:** 2026-10-26
 **Current phase:** Phase 3 wrap-up of classes and subjects (T8)
-**Current task:** T10c attendance pages built (sidebar "Attendance" for owner/admin/teacher; home grid per section with Marked/Not marked and day picker; register page with pupil rows, one-tap Present/Late/Absent/Excused buttons, daily summary chips; read-only outside the current session; 227 tests passing; CSS rebuilt; live-checked with owner and teacher data). Not yet verified by owner.
-**Next task:** Owner verifies attendance in the browser, then a seed demo of an unmarked day for owner testing, then T13 Finance (fee structures, invoices, payments). Push pending owner approval.
+**Current task:** Attendance permission tightened after owner decision: **form teacher only** may mark a register (subject teachers will mark scores in T12 instead); teacher home now lists only their form classes. 228 tests passed 2026-10-26, check clean, live-verified that mrs_ogunleye now sees only Primary 1 A and Primary 6 A. Attendance module complete pending Owner browser verification.
+**Next task:** Owner verifies attendance in the browser, then T13 Finance (fee structures, invoices, payments). Push pending owner approval.
 
 ## Task board
 
@@ -47,6 +47,13 @@ Statuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 | T21 | School public home page with gallery, news, admissions; own subdomain per school | TODO | Build after T9 to T13 |
 
 ## Task log (newest first)
+
+### Attendance permission: form teacher only (2026-10-26, 228 passed)
+- Owner decision matches real school operation: the daily register is marked by the form teacher; subject teachers will get their own "my classes + subjects" score views in T12
+- `ensure_can_mark` keeps only the ClassTeacher check; `_my_classes` in views returns only form classes (TeacherAssignment filter removed); service refusal message now `"Only the form teacher of this class or section can mark its register."`
+- New test: a subject teacher who is not the form teacher is refused (and no register/audit is created)
+- Live check: mrs_ogunleye (2 form classes, 7 subject assignments) now sees only Primary 1 A and Primary 6 A on the Attendance home
+
 
 ### T10c Attendance pages (2026-10-26, 227 passed)
 - URLs `/attendance/` home, `/attendance/open/` POST, `/attendance/registers/<pk>/` page, `/attendance/registers/<pk>/mark/` POST

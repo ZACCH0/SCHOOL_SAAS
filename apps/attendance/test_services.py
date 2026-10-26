@@ -6,7 +6,6 @@ from apps.academics.models import AcademicSession
 from apps.classes.models import ClassTeacher, Level, SchoolClass, Section
 from apps.audit.models import AuditLog
 from apps.schools.models import Membership
-from apps.subjects.models import TeacherAssignment
 from apps.students.models import Student
 
 from .models import AttendanceRecord, AttendanceSession
@@ -107,6 +106,26 @@ def test_a_teacher_not_assigned_to_the_class_is_refused(
         )
     assert not AttendanceSession.objects.exists()
     assert not AuditLog.objects.exists()
+
+
+@pytest.mark.django_db
+def test_a_subject_teacher_who_is_not_the_form_teacher_is_refused(
+    school_a, primary_three, section_a, session, other_teacher, make_request
+):
+    from apps.subjects.models import ClassSubject, Subject, TeacherAssignment
+
+    subject = Subject.objects.create(school=school_a, name="Basic Science and Technology")
+    ClassSubject.objects.create(school=school_a, school_class=primary_three, subject=subject)
+    TeacherAssignment.objects.create(
+        school=school_a, session=session, school_class=primary_three,
+        section=section_a, subject=subject, teacher=other_teacher,
+    )
+    with pytest.raises(PermissionDenied):
+        open_register(
+            make_request(school_a, Role.TEACHER, member=other_teacher),
+            school_class=primary_three, section=section_a, day=DAY,
+        )
+    assert not AttendanceSession.objects.exists()
 
 
 @pytest.mark.django_db

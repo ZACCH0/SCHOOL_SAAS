@@ -10,7 +10,6 @@ from apps.schools.models import Membership
 from apps.schools.permissions import MANAGE_STRUCTURE_ROLES, require_role
 from apps.schools.service_helpers import ensure_owned, save_or_explain
 from apps.students.models import Student
-from apps.subjects.models import TeacherAssignment
 
 from .models import AttendanceRecord, AttendanceSession
 
@@ -18,7 +17,8 @@ CanMarkRoles = MANAGE_STRUCTURE_ROLES + (Membership.Role.TEACHER,)
 
 
 def ensure_can_mark(request, school_class, session, section=None):
-    """Owner/admin may open any class. A teacher may only use their own class."""
+    """Owner/admin may mark any class. A teacher may only mark the register of
+    the class (or section) they are the form teacher of this session."""
     membership = getattr(request, "membership", None)
     if membership is None:
         raise PermissionDenied
@@ -32,15 +32,9 @@ def ensure_can_mark(request, school_class, session, section=None):
         .filter(_section_overlap(section))
         .exists()
     )
-    is_subject_teacher = (
-        TeacherAssignment.objects.for_school(request.school)
-        .filter(teacher=membership, session=session, school_class=school_class)
-        .filter(_section_overlap(section))
-        .exists()
-    )
-    if not (is_form_teacher or is_subject_teacher):
+    if not is_form_teacher:
         raise PermissionDenied(
-            "You are not a teacher of that class or section."
+            "Only the form teacher of this class or section can mark its register."
         )
 
 

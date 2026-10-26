@@ -11,7 +11,6 @@ from apps.classes.models import ClassTeacher, SchoolClass, Section
 from apps.schools.lookups import get_for_school_or_404
 from apps.schools.permissions import MANAGE_STRUCTURE_ROLES, role_required
 from apps.schools.models import Membership
-from apps.subjects.models import TeacherAssignment
 
 from .forms import OPEN_STATUSES, OpenRegisterForm
 from .models import AttendanceSession
@@ -28,27 +27,14 @@ def _text(exc):
 
 
 def _my_classes(request, session):
-    """Classes a teacher may open: their form classes plus any subject classes."""
-    membership = request.membership
-    form_classes = (
+    """Registers a teacher may mark: the classes/sections they are the form
+    teacher of this session. Subject teachers mark scores instead."""
+    return list(
         ClassTeacher.objects.for_school(request.school)
-        .filter(teacher=membership, session=session)
+        .filter(teacher=request.membership, session=session)
         .select_related("school_class", "section")
+        .order_by("school_class__order", "section__name")
     )
-    subject_classes = (
-        TeacherAssignment.objects.for_school(request.school)
-        .filter(teacher=membership, session=session)
-        .select_related("school_class", "section")
-    )
-    found = []
-    seen = set()
-    for link in list(form_classes) + list(subject_classes):
-        key = (link.school_class_id, link.section_id)
-        if key in seen:
-            continue
-        seen.add(key)
-        found.append({"school_class": link.school_class, "section": link.section})
-    return found
 
 
 @mark_allowed
@@ -69,7 +55,10 @@ def attendance_home(request):
             for section in school_class.sections.filter(is_active=True) or [None]:
                 choices.append({"school_class": school_class, "section": section})
     else:
-        choices = _my_classes(request, session)
+        choices = [
+            {"school_class": link.school_class, "section": link.section}
+            for link in _my_classes(request, session)
+        ]
     for choice in choices:
         exists = (
             AttendanceSession.objects.for_school(request.school)
