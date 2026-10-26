@@ -4,8 +4,8 @@ Single source of truth for where the project stands. Rules for updating it are i
 
 **Last updated:** 2026-10-26
 **Current phase:** Phase 3 wrap-up of classes and subjects (T8)
-**Current task:** School profile expanded: `School` now has `school_type` (Primary/JSS/SS/Mixed, default Primary) and optional `country`, `state`, `lga`, `town`; admin form regrouped and Five Star Model School filled with real details. Committed locally, NOT pushed (owner asked to hold).
-**Next task:** T9 Students and parents (admission numbers, parent with several children, pen-icon photo, class history), then T7d/T7e accounts and login. Push pending owner approval.
+**Current task:** T9a Students data model built (`apps/students`: Student, GuardianLink, StudentClassHistory), migration applied, 176 tests passing. Not yet verified by owner in the browser.
+**Next task:** T9b services (create student, assign class/section, link guardian, record class history, audit entries), then T9c forms/views/templates for owner and admin. Push still pending owner approval.
 
 ## Task board
 
@@ -25,7 +25,7 @@ Statuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 | T7c | Password reset (email based) | DONE (verified) | 53 passed |
 | T7d | Admin resets a user's password (temporary password, forced change) for users without email | TODO (proposed) | Owner has not yet approved |
 | T8 | Classes, sections, levels (Primary/JSS/SS activatable), subjects, class subjects, teacher assignments per session, class teacher | DONE (unverified by owner in browser) | T8a DONE (verified, 118 passed). T8b-1 services DONE (verified, 141 passed). T8b-2 views, forms, templates DONE (verified, 162 passed on 2026-10-26). Owner chose sections as a separate table (option A) |
-| T9 | Students and parents (parent with many children, history across promotions) | TODO | |
+| T9 | Students and parents (parent with many children, history across promotions) | IN PROGRESS | T9a data model DONE (176 tests passed on 2026-10-26). T9b services next |
 | T10 | Attendance | TODO | |
 | T11 | Admissions | TODO | |
 | T12 | Assessments, results, grading, workflow, report cards (PDF) | TODO | |
@@ -47,6 +47,14 @@ Statuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 | T21 | School public home page with gallery, news, admissions; own subdomain per school | TODO | Build after T9 to T13 |
 
 ## Task log (newest first)
+
+### T9a Students data model (2026-10-26, 176 passed)
+- New app `apps/students` (in INSTALLED_APPS): `Student` (names, sex, date of birth, address, admission number unique per school ignoring case, status: active/graduated/withdrawn/suspended/transferred, current class and optional section), `GuardianLink` (student + parent Membership, relationship mother/father/guardian, is_primary flag, unique per student, guardian must have Parent role in that school), `StudentClassHistory` (student + session + class + optional section, one row per session)
+- Rules in `clean()`: section belongs to its class, related records must be from the same school; all FKs are PROTECT; indexes on school+status and school+names
+- Deferred on purpose: photos (T20), promotion logic, auto-generated admission numbers (stored string for now)
+- Admin registered with school/status/class filters; tenant isolation tests added (school A cannot see school B students, foreign class/section/guardian refused)
+- Files: `apps/students/main models.py`, `apps/students/admin.py`, `apps/students/tests.py`, migration `students.0001_initial`
+- Test result: 176 passed; `makemigrations --check` clean; `manage.py check` clean
 
 ### School profile fields and real data (2026-10-26, 165 passed)
 - `apps/schools/models.py`: `School.SchoolType` choices (primary, jss, ss, mixed; default primary) and optional `country`, `state`, `lga`, `town` CharFields
