@@ -5,10 +5,14 @@ from apps.schools.models import Membership
 Role = Membership.Role
 MANAGERS = [Role.OWNER, Role.ADMIN]
 
+# A teacher marks the register, so attendance stays visible to teachers too.
+ATTENDANCE_ROLES = [Role.OWNER, Role.ADMIN, Role.TEACHER]
+
 # (label, url name, allowed roles). None means every role.
 # Add one line here when a module's page exists.
 NAV_ITEMS = [
     ("Dashboard", "core:dashboard", None),
+    ("Attendance", "attendance:home", ATTENDANCE_ROLES),
     ("Students", "students:list", MANAGERS),
     ("Classes", "classes:list", MANAGERS),
     ("Subjects", "subjects:list", MANAGERS),

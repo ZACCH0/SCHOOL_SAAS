@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Attendance{% endblock %}
+
+{% block content %}
+  {% include "components/page_header.html" with title="Attendance" subtitle="Daily registers for your classes." %}
+
+  {% if no_session %}
+    <p class="rounded-lg bg-amber-100 px-4 py-3 text-sm text-amber-800">There is no current academic session yet. Choose one in the admin before opening registers.</p>
+  {% endif %}
+
+  <div class="mb-4 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-line">
+    <p class="text-sm font-semibold">Change day</p>
+    <div class="mt-2 flex flex-wrap gap-2">
+      <form method="get" class="flex gap-2">
+        <input type="date" name="day" value="{{ chosen_day|date:'Y-m-d' }}" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+        <button class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white">Show</button>
+      </form>
+    </div>
+  </div>
+
+  <p class="mb-2 text-sm font-semibold text-ink">{{ chosen_day|date:"l, d F Y" }}</p>
+  <div class="grid gap-4 sm:grid-cols-2">
+    {% for choice in choices %}
+      <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-line">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="font-bold text-ink">{{ choice.school_class }}{% if choice.section %} {{ choice.section }}{% endif %}</p>
+            <p class="text-xs text-slate-500">{{ session.name }}</p>
+          </div>
+          {% if choice.register %}
+            {% include "components/status_chip.html" with kind="ok" label="Marked" %}
+          {% else %}
+            {% include "components/status_chip.html" with kind="neutral" label="Not marked" %}
+          {% endif %}
+        </div>
+        <div class="mt-3 flex gap-2">
+          {% if choice.register %}
+            <a href="{% url 'attendance:register' choice.register.pk %}" class="rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white">Open register</a>
+          {% elif chosen_day <= today %}
+            <form method="post" action="{% url 'attendance:open' %}">
+              {% csrf_token %}
+              <input type="hidden" name="school_class" value="{{ choice.school_class.pk }}">
+              <input type="hidden" name="section" value="{% if choice.section %}{{ choice.section.pk }}{% endif %}">
+              <input type="hidden" name="day" value="{{ chosen_day|date:'Y-m-d' }}">
+              <button class="rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white">Open register</button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+    {% empty %}
+      <p class="text-sm text-slate-600">No classes are assigned to you yet. Ask the school admin if this is wrong.</p>
+    {% endfor %}
+  </div>
+{% endblock %}

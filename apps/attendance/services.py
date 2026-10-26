@@ -63,8 +63,12 @@ def _pupils(school, school_class, section):
 @transaction.atomic
 def open_register(request, *, school_class, section, day):
     """The register for (class, section, day). Opened once and reused afterwards."""
+    from datetime import date as date_cls
+
     require_role(request, CanMarkRoles)
     ensure_owned(request, school_class, *([section] if section else []))
+    if day > date_cls.today():
+        raise ValidationError("A register cannot be opened for a future day.")
     session = current_session(request.school)
     if session is None:
         raise ValidationError("There is no current academic session. Set one first.")

@@ -4,8 +4,8 @@ Single source of truth for where the project stands. Rules for updating it are i
 
 **Last updated:** 2026-10-26
 **Current phase:** Phase 3 wrap-up of classes and subjects (T8)
-**Current task:** T10b attendance services done (`open_register` idempotent with auto present-lines for every pupil, `mark_student` change-only with audit; form teacher OR subject teacher of that class may mark, owner/admin may mark any class; teachers are refused after the term ends / old sessions read-only; 218 tests passing). Not yet verified by owner.
-**Next task:** T10c attendance pages (today's register with the pupil list and tap-to-mark, class/day views), thenverify with owner; then finance T13. Push pending owner approval.
+**Current task:** T10c attendance pages built (sidebar "Attendance" for owner/admin/teacher; home grid per section with Marked/Not marked and day picker; register page with pupil rows, one-tap Present/Late/Absent/Excused buttons, daily summary chips; read-only outside the current session; 227 tests passing; CSS rebuilt; live-checked with owner and teacher data). Not yet verified by owner.
+**Next task:** Owner verifies attendance in the browser, then a seed demo of an unmarked day for owner testing, then T13 Finance (fee structures, invoices, payments). Push pending owner approval.
 
 ## Task board
 
@@ -26,7 +26,7 @@ Statuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 | T7d | Admin resets a user's password (temporary password, forced change) for users without email | TODO (proposed) | Owner has not yet approved |
 | T8 | Classes, sections, levels (Primary/JSS/SS activatable), subjects, class subjects, teacher assignments per session, class teacher | DONE (unverified by owner in browser) | T8a DONE (verified, 118 passed). T8b-1 services DONE (verified, 141 passed). T8b-2 views, forms, templates DONE (verified, 162 passed on 2026-10-26). Owner chose sections as a separate table (option A) |
 | T9 | Students and parents (parent with many children, history across promotions) | DONE (verified by owner) | T9a data model, T9b services, T9c pages. 199 tests passed; owner consulted on admission numbers: manual entry stays, no auto-numbering for now |
-| T10 | Attendance | IN PROGRESS | T10a data model DONE (208 passed). T10b services DONE (218 passed on 2026-10-26). T10c pages next |
+| T10 | Attendance | DONE (unverified by owner in browser) | T10a model, T10b services, T10c pages. 227 tests passed on 2026-10-26; tenant isolation, role matrix, audit and read-only history covered |
 | T11 | Admissions | TODO | |
 | T12 | Assessments, results, grading, workflow, report cards (PDF) | TODO | |
 | T13 | Finance: fee structures, invoices, payments, receipts, balances | TODO | |
@@ -47,6 +47,14 @@ Statuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 | T21 | School public home page with gallery, news, admissions; own subdomain per school | TODO | Build after T9 to T13 |
 
 ## Task log (newest first)
+
+### T10c Attendance pages (2026-10-26, 227 passed)
+- URLs `/attendance/` home, `/attendance/open/` POST, `/attendance/registers/<pk>/` page, `/attendance/registers/<pk>/mark/` POST
+- Home: grid of classes/sections for a chosen day (owners/admins see all classes; teachers see only their form classes and the classes whose subjects they teach), day picker, Marked/Not-marked chips, Open register buttons; future days cannot be opened
+- Register page: pupils with surname first, one-tap status buttons (four small POST forms), remark column text, daily summary chips; outside the current session the page is read-only
+- Nav entry "Attendance" (owner, admin, teacher); `templates/attendance/home.html` and `register.html` reuse shared components; `static/css/output.css` rebuilt
+- Tests 9 view tests (login, 403 parent, admin opens, teacher class filtering, mark absent with remark, cross-school pupil refused, future day refused, read-only view). Live shell check: admin home shows 9 marked registers for today (seed data), teacher home shows own classes only
+- Owner should next look in the browser; a day with no register (e.g. change the picker) shows Not-marked chips to try opening one
 
 ### T10b Attendance marking services (2026-10-26, 218 passed)
 - `apps/attendance/services.py`: `open_register` (owner/admin any class; a teacher only their own class or section; creates the register once per day and fills every pupil with Present; re-opening returns the existing register), `mark_student` (create or change one pupil's line, audit shows previous and new status; refuses pupils of other classes/sections; old-session registers are read-only)
