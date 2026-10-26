@@ -48,6 +48,12 @@ Statuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 
 ## Task log (newest first)
 
+### Pilot school student seed (2026-10-26)
+- 72 placeholder pupils filled for Five Star Model School (12 per class, Primary 1-6, admission numbers FSS/2026/001-072, Yoruba names, Saki addresses, session-appropriate birth dates, sections assigned, StudentClassHistory rows for 2026/2027)
+- Fixed period typo "Firsr Term" to "First Term" and made First Term the current period (was wrongly Second Term in October)
+- IMPORTANT: these are realistic placeholders, not the real school register; must be replaced with the school's actual pupil list before live use
+- Shell seeding writes no audit entries (no request context); acceptable for seed data
+
 ### T9a Students data model (2026-10-26, 176 passed)
 - New app `apps/students` (in INSTALLED_APPS): `Student` (names, sex, date of birth, address, admission number unique per school ignoring case, status: active/graduated/withdrawn/suspended/transferred, current class and optional section), `GuardianLink` (student + parent Membership, relationship mother/father/guardian, is_primary flag, unique per student, guardian must have Parent role in that school), `StudentClassHistory` (student + session + class + optional section, one row per session)
 - Rules in `clean()`: section belongs to its class, related records must be from the same school; all FKs are PROTECT; indexes on school+status and school+names
