@@ -4,8 +4,8 @@ Single source of truth for where the project stands. Rules for updating it are i
 
 **Last updated:** 2026-10-26
 **Current phase:** Phase 3 wrap-up of classes and subjects (T8)
-**Current task:** T8b-2 verified (162 passed, owner confirmed). Docs cleaned up: `AGENTS.md`, `PROJECT_STATE.md` and `Requirements.md` now live at repo root; older copies moved to `ARCHIVE/` (nothing deleted). T8b-2 code needs to be committed and pushed (branch is ahead of origin by 1 commit).
-**Next task:** Commit and push T8b-2 work, then T9 Students and parents (admission numbers, parent with several children, pen-icon photo, class history), then T7d/T7e accounts and login.
+**Current task:** School profile expanded: `School` now has `school_type` (Primary/JSS/SS/Mixed, default Primary) and optional `country`, `state`, `lga`, `town`; admin form regrouped and Five Star Model School filled with real details. Committed locally, NOT pushed (owner asked to hold).
+**Next task:** T9 Students and parents (admission numbers, parent with several children, pen-icon photo, class history), then T7d/T7e accounts and login. Push pending owner approval.
 
 ## Task board
 
@@ -47,6 +47,14 @@ Statuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 | T21 | School public home page with gallery, news, admissions; own subdomain per school | TODO | Build after T9 to T13 |
 
 ## Task log (newest first)
+
+### School profile fields and real data (2026-10-26, 165 passed)
+- `apps/schools/models.py`: `School.SchoolType` choices (primary, jss, ss, mixed; default primary) and optional `country`, `state`, `lga`, `town` CharFields
+- Migration `schools.0002_school_country_school_lga_school_school_type_and_more` applied
+- `apps/schools/admin.py`: fieldsets (basic/contact/location/status), `school_type` in list display and filters
+- `apps/schools/tests.py`: 3 new tests (default type, JSS type accepted, location fields saved). Suite: 165 passed
+- Real data filled via shell for Five Star Model School (address 12 Isale Taba Road, phone, email, town Saki, LGA Saki West, Oyo State, Nigeria); other schools left as they are
+- Manual check: admin change page renders with all fields and saved values (status 200)
 
 ### T8b-2 Views for classes and subjects (verified: 162 passed on 2026-10-26)
 - Owner ran the full suite: 162 passed (13 classes view tests, 8 subjects view tests included)

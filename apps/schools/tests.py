@@ -42,3 +42,32 @@ def test_school_with_members_cannot_be_deleted():
     Membership.objects.create(user=user, school=school, role=Membership.Role.ADMIN)
     with pytest.raises(ProtectedError):
         school.delete()
+
+@pytest.mark.django_db
+def test_school_defaults_to_primary_type():
+    school = make_school()
+    assert school.school_type == School.SchoolType.PRIMARY
+
+
+@pytest.mark.django_db
+def test_school_accepts_jss_type():
+    school = make_school("Beta School", "beta")
+    school.school_type = School.SchoolType.JSS
+    school.save()
+    school.refresh_from_db()
+    assert school.school_type == School.SchoolType.JSS
+
+
+@pytest.mark.django_db
+def test_school_location_fields_are_optional_and_saved():
+    school = make_school()
+    school.town = "Saki"
+    school.lga = "Saki West"
+    school.state = "Oyo State"
+    school.country = "Nigeria"
+    school.save()
+    school.refresh_from_db()
+    assert school.town == "Saki"
+    assert school.lga == "Saki West"
+    assert school.state == "Oyo State"
+    assert school.country == "Nigeria"

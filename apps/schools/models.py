@@ -6,12 +6,25 @@ from django.db import models
 class School(models.Model):
     """A tenant. Every school-owned record points to one School."""
 
+    class SchoolType(models.TextChoices):
+        PRIMARY = "primary", "Primary"
+        JSS = "jss", "Junior Secondary"
+        SS = "ss", "Senior Secondary"
+        MIXED = "mixed", "Primary and Secondary"
+
     name = models.CharField(max_length=200)
     slug = models.SlugField(unique=True)
     address = models.TextField(blank=True)
     phone = models.CharField(max_length=20, blank=True)
     email = models.EmailField(blank=True)
     website = models.URLField(blank=True)
+    school_type = models.CharField(
+        max_length=10, choices=SchoolType.choices, default=SchoolType.PRIMARY
+    )
+    country = models.CharField(max_length=60, blank=True)
+    state = models.CharField(max_length=60, blank=True)
+    lga = models.CharField(max_length=60, blank=True)
+    town = models.CharField(max_length=60, blank=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
