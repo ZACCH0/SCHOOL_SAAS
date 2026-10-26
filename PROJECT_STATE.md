@@ -4,8 +4,8 @@ Single source of truth for where the project stands. Rules for updating it are i
 
 **Last updated:** 2026-10-26
 **Current phase:** Phase 3 wrap-up of classes and subjects (T8)
-**Current task:** T9a Students data model built (`apps/students`: Student, GuardianLink, StudentClassHistory), migration applied, 176 tests passing. Not yet verified by owner in the browser.
-**Next task:** T9b services (create student, assign class/section, link guardian, record class history, audit entries), then T9c forms/views/templates for owner and admin. Push still pending owner approval.
+**Current task:** T9b services built (`apps/students/services.py`: create student with class history, update, status change, move with history upsert, guardian link/unlink with single primary rule, all with role checks, tenant checks and audit entries; 186 tests passing). Not yet verified by owner in the browser.
+**Next task:** T9c forms, views, URLs and templates for students and guardians (owner/admin only, like classes/subjects), then T7d/T7e accounts and login. Push still pending owner approval.
 
 ## Task board
 
@@ -25,7 +25,7 @@ Statuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 | T7c | Password reset (email based) | DONE (verified) | 53 passed |
 | T7d | Admin resets a user's password (temporary password, forced change) for users without email | TODO (proposed) | Owner has not yet approved |
 | T8 | Classes, sections, levels (Primary/JSS/SS activatable), subjects, class subjects, teacher assignments per session, class teacher | DONE (unverified by owner in browser) | T8a DONE (verified, 118 passed). T8b-1 services DONE (verified, 141 passed). T8b-2 views, forms, templates DONE (verified, 162 passed on 2026-10-26). Owner chose sections as a separate table (option A) |
-| T9 | Students and parents (parent with many children, history across promotions) | IN PROGRESS | T9a data model DONE (176 tests passed on 2026-10-26). T9b services next |
+| T9 | Students and parents (parent with many children, history across promotions) | IN PROGRESS | T9a data model DONE (176 passed). T9b services DONE (186 tests passed on 2026-10-26). T9c views next |
 | T10 | Attendance | TODO | |
 | T11 | Admissions | TODO | |
 | T12 | Assessments, results, grading, workflow, report cards (PDF) | TODO | |
@@ -47,6 +47,11 @@ Statuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 | T21 | School public home page with gallery, news, admissions; own subdomain per school | TODO | Build after T9 to T13 |
 
 ## Task log (newest first)
+
+### T9b Student services (2026-10-26, 186 passed)
+- `apps/students/services.py`: `create_student` (admission number friendly message, auto class-history row for the current session), `update_student` (audit shows old and new values), `set_student_status`, `move_student` (updates history row in the same transaction), `add_guardian` (Parent role enforced, only one primary guardian per student), `remove_guardian`
+- All services: owner/admin only via `require_role`, school from the request, other-school records refused via `ensure_owned`, audit entry in the same transaction
+- Tests: `apps/students/test_services.py` (10). Suite: 186 passed; `check` and `makemigrations --check` clean
 
 ### Pilot school student seed (2026-10-26)
 - 72 placeholder pupils filled for Five Star Model School (12 per class, Primary 1-6, admission numbers FSS/2026/001-072, Yoruba names, Saki addresses, session-appropriate birth dates, sections assigned, StudentClassHistory rows for 2026/2027)
