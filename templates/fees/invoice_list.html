@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Invoices{% endblock %}
+
+{% block content %}
+  {% if no_session %}
+    {% include "components/page_header.html" with crumb="Fees / Invoices" title="Invoices" %}
+    <p class="rounded-lg bg-amber-100 px-4 py-3 text-sm text-warn">There is no current session yet.</p>
+  {% else %}
+    {% include "components/page_header.html" with crumb="Fees / Invoices" title="Invoices" subtitle="Bills for every pupil this term." %}
+
+    <div class="mb-4 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-line">
+      <form method="get" class="flex flex-wrap items-end gap-2">
+        <div class="grow min-w-40">
+          <label class="mb-1 block text-xs font-semibold" for="q">Search</label>
+          <input type="text" name="q" id="q" value="{{ form.q.value|default:'' }}" placeholder="Number, name or admission no." class="w-full rounded-lg border border-line px-3 py-2 text-sm">
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-semibold" for="id_school_class">Class</label>
+          {{ form.school_class }}
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-semibold" for="id_status">Status</label>
+          {{ form.status }}
+        </div>
+        <button class="rounded-lg border border-brand-600 px-4 py-2 text-sm font-semibold text-brand-700">Filter</button>
+      </form>
+    </div>
+
+    <form method="post" action="{% url 'fees:generate' %}" class="mb-4 flex flex-wrap items-end gap-2 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-line">
+      {% csrf_token %}
+      <div>
+        <label class="mb-1 block text-xs font-semibold" for="id_generate_class">Generate invoices for {{ period.name }}</label>
+        {{ generate_form.school_class }}
+      </div>
+      <button class="rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white">Generate invoices</button>
+      <p class="w-full text-xs text-muted">Uses the fee structure for this session. Pupils who already have an invoice are skipped.</p>
+    </form>
+
+    <div class="overflow-x-auto rounded-2xl bg-white shadow-sm ring-1 ring-line">
+      <table class="w-full text-left text-sm">
+        <thead class="border-b border-line text-xs uppercase tracking-wide text-muted">
+          <tr>
+            <th class="px-4 py-3 font-semibold">Invoice</th>
+            <th class="px-4 py-3 font-semibold">Student</th>
+            <th class="px-4 py-3 font-semibold">Total</th>
+            <th class="px-4 py-3 font-semibold">Paid</th>
+            <th class="px-4 py-3 font-semibold">Balance</th>
+            <th class="px-4 py-3 font-semibold">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for invoice in page_obj %}
+            <tr class="border-b border-line last:border-0">
+              <td class="px-4 py-3">
+                <a href="{% url 'fees:invoice_detail' invoice.pk %}" class="font-semibold text-brand-700 hover:underline">{{ invoice.number }}</a>
+              </td>
+              <td class="px-4 py-3">{{ invoice.student.last_name }}, {{ invoice.student.first_name }}</td>
+              <td class="px-4 py-3">&#8358;{{ invoice.item_total|intcomma }}</td>
+              <td class="px-4 py-3">&#8358;{{ invoice.paid_total|intcomma }}</td>
+              <td class="px-4 py-3 font-semibold">&#8358;{{ invoice.balance_due|intcomma }}</td>
+              <td class="px-4 py-3">
+                {% if invoice.status == 'paid' %}
+                  {% include "components/status_chip.html" with kind="ok" label="Paid" %}
+                {% elif invoice.status == 'part_paid' %}
+                  {% include "components/status_chip.html" with kind="warn" label="Part paid" %}
+                {% elif invoice.is_overdue %}
+                  {% include "components/status_chip.html" with kind="bad" label="Overdue" %}
+                {% else %}
+                  {% include "components/status_chip.html" with kind="neutral" label="Unpaid" %}
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6" class="px-4 py-6 text-center text-muted">No invoices for this term yet. Use Generate invoices above.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if page_obj.has_other_pages %}
+      <div class="mt-4 flex justify-center gap-1 text-sm">
+        {% if page_obj.has_previous %}<a class="rounded-lg border border-line bg-white px-3 py-2" href="?page={{ page_obj.previous_page_number }}">&laquo;</a>{% endif %}
+        <span class="px-3 py-2 text-muted">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}<a class="rounded-lg border border-line bg-white px-3 py-2" href="?page={{ page_obj.next_page_number }}">&raquo;</a>{% endif %}
+      </div>
+    {% endif %}
+  {% endif %}
+{% endblock %}

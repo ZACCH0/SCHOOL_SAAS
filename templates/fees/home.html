@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Fees{% endblock %}
+
+{% block content %}
+  {% if no_session %}
+    {% include "components/page_header.html" with crumb="Fees" title="Fees overview" %}
+    <p class="rounded-lg bg-amber-100 px-4 py-3 text-sm text-warn">There is no current session yet. Set one up in the admin first.</p>
+  {% elif no_period %}
+    {% include "components/page_header.html" with crumb="Fees" title="Fees overview" subtitle=session.name %}
+    <p class="rounded-lg bg-amber-100 px-4 py-3 text-sm text-warn">No term has been created for this session yet.</p>
+  {% else %}
+    {% include "components/page_header.html" with crumb="Fees" title="Fees overview" subtitle="Billed money for the chosen term." %}
+
+    <form method="get" class="mb-4 flex items-end gap-2">
+      <div>
+        <label class="mb-1 block text-xs font-semibold" for="period">Term</label>
+        <select name="period" id="period" class="rounded-lg border border-line bg-white px-3 py-2 text-sm">
+          {% for p in periods %}
+            <option value="{{ p.pk }}" {% if p.pk == period.pk %}selected{% endif %}>{{ p.name }} · {{ p.session.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <button class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white">Show</button>
+    </form>
+
+    <div class="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-line">
+        <p class="text-sm text-muted">Expected</p>
+        <p class="mt-1 text-2xl font-extrabold text-ink">&#8358;{{ overview.expected|intcomma }}</p>
+      </div>
+      <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-line">
+        <p class="text-sm text-muted">Collected</p>
+        <p class="mt-1 text-2xl font-extrabold text-ok">&#8358;{{ overview.collected|intcomma }}</p>
+      </div>
+      <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-line">
+        <p class="text-sm text-muted">Outstanding</p>
+        <p class="mt-1 text-2xl font-extrabold text-warn">&#8358;{{ overview.outstanding|intcomma }}</p>
+      </div>
+      <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-line">
+        <p class="text-sm text-muted">Collection rate</p>
+        <p class="mt-1 text-2xl font-extrabold text-ink">{% if overview.rate is not None %}{{ overview.rate }}%{% else %}&mdash;{% endif %}</p>
+      </div>
+    </div>
+
+    <div class="overflow-x-auto rounded-2xl bg-white shadow-sm ring-1 ring-line">
+      <table class="w-full text-left text-sm">
+        <thead class="border-b border-line text-xs uppercase tracking-wide text-muted">
+          <tr>
+            <th class="px-4 py-3 font-semibold">Class</th>
+            <th class="px-4 py-3 font-semibold">Expected</th>
+            <th class="px-4 py-3 font-semibold">Collected</th>
+            <th class="px-4 py-3 font-semibold">Outstanding</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in overview.rows %}
+            <tr class="border-b border-line last:border-0">
+              <td class="px-4 py-3 font-semibold text-ink">{{ row.class_name }}</td>
+              <td class="px-4 py-3">&#8358;{{ row.expected|intcomma }}</td>
+              <td class="px-4 py-3">&#8358;{{ row.collected|intcomma }}</td>
+              <td class="px-4 py-3 {% if row.outstanding > 0 %}text-warn font-semibold{% endif %}">&#8358;{{ row.outstanding|intcomma }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4" class="px-4 py-6 text-center text-muted">No invoices for this term yet. Generate them from the Invoices page.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+{% endblock %}

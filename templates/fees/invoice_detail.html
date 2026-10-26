@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}{{ invoice.number }}{% endblock %}
+
+{% block content %}
+  {% include "components/page_header.html" with crumb="Fees / Invoices" title=invoice.number subtitle=invoice.period.name %}
+
+  <div class="mb-5 grid gap-3 md:grid-cols-2">
+    <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-line">
+      <p class="text-sm text-muted">Student</p>
+      <p class="mt-1 text-lg font-bold text-ink">
+        {{ invoice.student.last_name }}, {{ invoice.student.first_name }}
+        <span class="text-sm font-normal text-muted">· {{ invoice.student.admission_number }} · {{ invoice.student.current_class }}</span>
+      </p>
+      <p class="mt-2 text-sm text-muted">
+        {{ invoice.period.name }} · {{ invoice.session.name }} · Issued {{ invoice.issue_date }} · Due {{ invoice.due_date }}
+      </p>
+      <div class="mt-3">
+        {% if invoice.status == 'paid' %}
+          {% include "components/status_chip.html" with kind="ok" label="Paid" %}
+        {% elif invoice.status == 'part_paid' %}
+          {% include "components/status_chip.html" with kind="warn" label="Part paid" %}
+        {% elif invoice.is_overdue %}
+          {% include "components/status_chip.html" with kind="bad" label="Overdue" %}
+        {% else %}
+          {% include "components/status_chip.html" with kind="neutral" label="Unpaid" %}
+        {% endif %}
+      </div>
+    </div>
+    <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-line">
+      <dl class="space-y-2 text-sm">
+        <div class="flex justify-between"><dt class="text-muted">Total</dt><dd class="font-semibold">&#8358;{{ invoice.item_total|intcomma }}</dd></div>
+        <div class="flex justify-between"><dt class="text-muted">Paid</dt><dd class="font-semibold text-ok">&#8358;{{ invoice.paid_total|intcomma }}</dd></div>
+        <div class="flex justify-between border-t border-line pt-2"><dt class="text-muted">Balance</dt><dd class="text-base font-extrabold text-warn">&#8358;{{ invoice.balance|intcomma }}</dd></div>
+      </dl>
+    </div>
+  </div>
+
+  <div class="mb-5 overflow-x-auto rounded-2xl bg-white shadow-sm ring-1 ring-line">
+    <table class="w-full text-left text-sm">
+      <thead class="border-b border-line text-xs uppercase tracking-wide text-muted">
+        <tr>
+          <th class="px-4 py-3 font-semibold">Item</th>
+          <th class="px-4 py-3 font-semibold">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+          <tr class="border-b border-line last:border-0">
+            <td class="px-4 py-3">{{ item.description }}</td>
+            <td class="px-4 py-3">&#8358;{{ item.amount|intcomma }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="grid gap-4 md:grid-cols-2">
+    <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-line">
+      <p class="mb-2 font-semibold">Record a payment</p>
+      {% if invoice.balance <= 0 %}
+        <p class="rounded-lg bg-green-100 px-3 py-2 text-sm text-ok">This invoice is fully paid.</p>
+      {% else %}
+        <form method="post" action="{% url 'fees:pay' invoice.pk %}" class="grid gap-3">
+          {% csrf_token %}
+          <div class="field"><label for="{{ pay_form.amount.id_for_label }}">Amount (NGN)</label>{{ pay_form.amount }}{% if pay_form.amount.errors %}<p class="mt-1 text-xs text-bad">{{ pay_form.amount.errors.0 }}</p>{% endif %}</div>
+          <div class="field"><label for="{{ pay_form.method.id_for_label }}">Method</label>{{ pay_form.method }}</div>
+          <div class="field"><label for="{{ pay_form.reference.id_for_label }}">Reference</label>{{ pay_form.reference }}</div>
+          <div class="field"><label for="{{ pay_form.paid_on.id_for_label }}">Payment date</label>{{ pay_form.paid_on }}</div>
+          <div class="field"><label for="{{ pay_form.note.id_for_label }}">Note (optional)</label>{{ pay_form.note }}</div>
+          <button class="rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white">Record payment</button>
+          <p class="text-xs text-muted">The reference protects against double entries: recording the same reference again does nothing.</p>
+        </form>
+      {% endif %}
+    </div>
+
+    <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-line">
+      <p class="mb-2 font-semibold">Payments received</p>
+      <ul class="divide-y divide-line text-sm">
+        {% for payment in payments %}
+          <li class="flex items-center justify-between gap-2 py-2">
+            <div>
+              <p class="font-semibold">&#8358;{{ payment.amount|intcomma }} <span class="text-xs font-normal text-muted">· {{ payment.get_method_display }} · {{ payment.paid_on }}</span></p>
+              <p class="text-xs text-muted">{{ payment.reference }} · by {{ payment.received_by.user.get_full_name|default:payment.received_by.user.username }}</p>
+            </div>
+            <a href="{% url 'fees:receipt' payment.pk %}" class="rounded-lg border border-brand-600 px-3 py-2 text-xs font-semibold text-brand-700">Receipt</a>
+          </li>
+        {% empty %}
+          <li class="py-2 text-muted">No payments yet.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+{% endblock %}

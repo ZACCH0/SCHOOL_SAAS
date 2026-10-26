@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Receipt {{ payment.reference }}{% endblock %}
+
+{% block content %}
+  <div class="mx-auto max-w-2xl">
+    <div class="mb-3 flex items-center justify-between print:hidden">
+      <a href="{% url 'fees:invoice_detail' invoice.pk %}" class="rounded-lg border border-line bg-white px-3 py-2 text-sm font-semibold text-brand-700">&larr; Back to invoice</a>
+      <button onclick="window.print()" class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white">Print</button>
+    </div>
+
+    <div class="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-line">
+      <div class="text-center">
+        <p class="text-2xl font-bold text-brand-700">{{ invoice.school.name }}</p>
+        <p class="text-sm text-muted">{{ invoice.school.town|default:"" }}{% if invoice.school.town and invoice.school.state %}, {% endif %}{{ invoice.school.state|default:"" }}</p>
+        <p class="mt-2 text-sm font-bold uppercase tracking-widest">Payment receipt</p>
+      </div>
+
+      <hr class="my-4 border-t-2 border-brand-600" />
+
+      <div class="flex justify-between text-sm">
+        <p><span class="font-bold">Receipt no.:</span> {{ payment.reference }}</p>
+        <p><span class="font-bold">Date:</span> {{ payment.paid_on }}</p>
+      </div>
+
+      <dl class="mt-4 text-sm">
+        <div class="flex justify-between border-b border-line py-2"><dt class="text-muted">Student</dt><dd>{{ invoice.student.last_name }}, {{ invoice.student.first_name }} · {{ invoice.student.current_class }}</dd></div>
+        <div class="flex justify-between border-b border-line py-2"><dt class="text-muted">Invoice</dt><dd>{{ invoice.number }} · {{ invoice.period.name }} {{ invoice.session.name }}</dd></div>
+        <div class="flex justify-between border-b border-line py-2"><dt class="text-muted">Method</dt><dd>{{ payment.get_method_display }}{% if payment.note %} · {{ payment.note }}{% endif %}</dd></div>
+        <div class="flex justify-between border-b border-line py-2"><dt class="text-muted">Amount paid</dt><dd class="text-base font-extrabold">&#8358;{{ payment.amount|intcomma }}</dd></div>
+        <div class="flex justify-between border-b border-line py-2"><dt class="text-muted">Previous balance</dt><dd>&#8358;{{ previous_balance|intcomma }}</dd></div>
+        <div class="flex justify-between py-2"><dt class="text-muted">Remaining balance</dt><dd class="font-extrabold {% if invoice.balance > 0 %}text-warn{% endif %}">&#8358;{{ invoice.balance|intcomma }}</dd></div>
+      </dl>
+
+      <p class="mt-8 text-sm text-muted">Received by: {{ payment.received_by.user.get_full_name|default:payment.received_by.user.username }}</p>
+    </div>
+  </div>
+{% endblock %}

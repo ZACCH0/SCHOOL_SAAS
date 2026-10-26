@@ -8,6 +8,9 @@ MANAGERS = [Role.OWNER, Role.ADMIN]
 # A teacher marks the register, so attendance stays visible to teachers too.
 ATTENDANCE_ROLES = [Role.OWNER, Role.ADMIN, Role.TEACHER]
 
+# Finance is for the school office only (the bursar handles money).
+FEES_ROLES = [Role.OWNER, Role.ADMIN, Role.BURSAR]
+
 # (label, url name, allowed roles). None means every role.
 # Add one line here when a module's page exists.
 NAV_ITEMS = [
@@ -16,6 +19,7 @@ NAV_ITEMS = [
     ("Students", "students:list", MANAGERS),
     ("Classes", "classes:list", MANAGERS),
     ("Subjects", "subjects:list", MANAGERS),
+    ("Fees", "fees:home", FEES_ROLES),
 ]
 
 

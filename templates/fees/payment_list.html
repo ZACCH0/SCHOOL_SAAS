@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Payments{% endblock %}
+
+{% block content %}
+  {% include "components/page_header.html" with crumb="Fees / Payments" title="Payments received" %}
+
+  <div class="overflow-x-auto rounded-2xl bg-white shadow-sm ring-1 ring-line">
+    <table class="w-full text-left text-sm">
+      <thead class="border-b border-line text-xs uppercase tracking-wide text-muted">
+        <tr>
+          <th class="px-4 py-3 font-semibold">Reference</th>
+          <th class="px-4 py-3 font-semibold">Student</th>
+          <th class="px-4 py-3 font-semibold">Invoice</th>
+          <th class="px-4 py-3 font-semibold">Amount</th>
+          <th class="px-4 py-3 font-semibold">Method</th>
+          <th class="px-4 py-3 font-semibold">Date</th>
+          <th class="px-4 py-3"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for payment in page_obj %}
+          <tr class="border-b border-line last:border-0">
+            <td class="px-4 py-3 font-semibold text-ink">{{ payment.reference }}</td>
+            <td class="px-4 py-3">{{ payment.invoice.student.last_name }}, {{ payment.invoice.student.first_name }}</td>
+            <td class="px-4 py-3">
+              <a class="text-brand-700 hover:underline" href="{% url 'fees:invoice_detail' payment.invoice_id %}">{{ payment.invoice.number }}</a>
+            </td>
+            <td class="px-4 py-3 font-semibold text-ok">&#8358;{{ payment.amount|intcomma }}</td>
+            <td class="px-4 py-3">{{ payment.get_method_display }}</td>
+            <td class="px-4 py-3">{{ payment.paid_on }}</td>
+            <td class="px-4 py-3 text-right">
+              <a class="rounded-lg border border-brand-600 px-3 py-1.5 text-xs font-semibold text-brand-700" href="{% url 'fees:receipt' payment.pk %}">Receipt</a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7" class="px-4 py-6 text-center text-muted">No payments recorded yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if page_obj.has_other_pages %}
+    <div class="mt-4 flex justify-center gap-1 text-sm">
+      {% if page_obj.has_previous %}<a class="rounded-lg border border-line bg-white px-3 py-2" href="?page={{ page_obj.previous_page_number }}">&laquo;</a>{% endif %}
+      <span class="px-3 py-2 text-muted">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}<a class="rounded-lg border border-line bg-white px-3 py-2" href="?page={{ page_obj.next_page_number }}">&raquo;</a>{% endif %}
+    </div>
+  {% endif %}
+{% endblock %}

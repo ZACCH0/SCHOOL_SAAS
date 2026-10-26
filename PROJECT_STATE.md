@@ -4,8 +4,8 @@ Single source of truth for where the project stands. Rules for updating it are i
 
 **Last updated:** 2026-10-26
 **Current phase:** Phase 3 wrap-up of classes and subjects (T8)
-**Current task:** Attendance restyled to the canvas design (design tokens added to `input.css`: muted/ok/bad/warn/info; chip component now semantic; attendance home = stat cards Present %, Registers taken x of y, Absent count + table on desktop with Class/Teacher/Register/Present columns, stacked cards on phones; register page = teal header, count chips, pupil cards with 44px P/A/L/E squares (green/red/amber/slate filled when active) + remark input per pupil; instant-save kept instead of the canvas Save button). 228 tests passing. Owner browser verification of attendance UI pending.
-**Next task:** Owner verifies attendance UI in browser (hard-refresh Ctrl+Shift+R), then T13 Finance (fee structures, invoices, payments) built already in canvas style from the fees PNGs. Push pending owner approval.
+**Current task:** T13 Finance DONE in code (unverified in browser by owner): fee structure per session with per-class prices (per term / per session / optional), one-click invoice generation for a term (idempotent, only active pupils, only classes with prices), invoice list with search/class/status filters and reliable totals, invoice detail with payment recording (idempotent reference, no overpay, no future dates), payments list, printable receipt with previous/remaining balance. 257 tests passed 2026-10-26. Dev DB seeded: 73 invoices for First Term, 1 part payment recorded.
+**Next task:** Owner verifies Finance in browser; then push to GitHub is done and progress review (what remains: dashboards, timetable, results T12, admissions T11, parent portal, announcements, analytics, public website, deployment). Note: `CheckConstraint(check=...)` deprecation warnings in fees models — switch to `condition=` in a cleanup task.
 
 ## Task board
 
@@ -29,7 +29,7 @@ Statuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 | T10 | Attendance | DONE (unverified by owner in browser) | T10a model, T10b services, T10c pages. 227 tests passed on 2026-10-26; tenant isolation, role matrix, audit and read-only history covered |
 | T11 | Admissions | TODO | |
 | T12 | Assessments, results, grading, workflow, report cards (PDF) | TODO | |
-| T13 | Finance: fee structures, invoices, payments, receipts, balances | IN PROGRESS | T13a model DONE, T13b services DONE (250 passed 2026-10-26). T13c pages next |
+| T13 | Finance: fee structures, invoices, payments, receipts, balances | DONE (unverified by owner in browser) | T13a model, T13b services, T13c pages. 257 tests passed on 2026-10-26; idempotent payments, no overpay, audit, tenant isolation |
 | T14 | Dashboards, announcements, notifications, timetable | TODO | |
 | T15 | Documents, analytics, audit log | TODO | |
 | T16 | Security hardening (login attempt limiting, backups, file security, production settings) | TODO | |
@@ -47,6 +47,16 @@ Statuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 | T21 | School public home page with gallery, news, admissions; own subdomain per school | TODO | Build after T9 to T13 |
 
 ## Task log (newest first)
+
+### T13 Finance complete (2026-10-26, 257 passed)
+- T13a `apps/fees/models.py`: FeeItem (per session, charged per term / per session / optional), FeeItemPrice (amount per class), Invoice (number INV-xxxx per school, status unpaid/part_paid/paid, issue/due dates), InvoiceItem (description+amount snapshot so later fee changes never alter issued invoices), Payment (amount, method cash/transfer/POS/cheque, reference unique per school case-insensitive, received_by, paid_on). DB constraints: unique numbers/references, positive amounts, due >= issue
+- T13b services: `create_fee_item`, `set_price` (owner/admin), `generate_invoices` (per term; skips pupils already billed, optional items never auto-billed, per-session items only in the term that starts the session; only active pupils; only classes with a price), `record_payment` (finance roles; atomic with select_for_update; idempotent on reference — same reference returns the same payment; refuses overpay, future dates, missing reference; updates status; audits `fees.payment_recorded`)
+- T13c pages styled from the fees PNGs: Fees overview (Expected/Collected/Outstanding/Collection rate stat cards + per-class table, term picker), Fee structure (add item, set per-class prices, price tags), Invoices (search + class + status filters incl. Overdue, Generate invoices, totals via subquery annotations `item_total/paid_total/balance_due`), Invoice detail (items, balance, record payment form, payments with receipt links), Payments list, printable Receipt (school header, receipt no., previous/remaining balance, print button). Nav "Fees" for owner/admin/bursar
+- Decisions: fee structure defined per session (schools can copy it for a new session later); receipts use reference as receipt number; Paystack/online payments stay FUTURE
+- Bugs caught by tests on the way: annotation named `balance` collided with the property (renamed `balance_due`), double-counting Sum over items x payments (replaced with subqueries), forms.py missing SchoolClass import, previous-balance math
+- Dev DB now has 73 First Term invoices (all active pupils) + one part payment FSS-RCPT-001 for owner demo; `django.contrib.humanize` enabled for ₦ thousands separators
+- Known debt: `CheckConstraint(check=...)` deprecation warnings (Django 6) in fees models — switch to `condition=` later
+
 
 ### Attendance styled to the canvas (2026-10-26, 228 passed)
 - Design canvas added to repo (62 screens + design system); workflow decision: style each module as we build it, tokens/components change in one place

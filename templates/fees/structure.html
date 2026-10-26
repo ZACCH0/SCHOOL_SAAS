@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Fee structure{% endblock %}
+
+{% block content %}
+  {% if no_session %}
+    {% include "components/page_header.html" with crumb="Fees / Structure" title="Fee structure" %}
+    <p class="rounded-lg bg-amber-100 px-4 py-3 text-sm text-warn">There is no current session yet.</p>
+  {% else %}
+    {% include "components/page_header.html" with crumb="Fees / Structure" title="Fee structure" subtitle=session.name %}
+
+    <div class="mb-5 grid gap-3 md:grid-cols-2">
+      <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-line">
+        <p class="mb-2 font-semibold">Add fee item</p>
+        <form method="post" action="{% url 'fees:item_add' %}" class="flex flex-wrap items-end gap-2">
+          {% csrf_token %}
+          <div class="grow">
+            <label class="mb-1 block text-xs font-semibold" for="name">Name</label>
+            <input type="text" name="name" id="name" required maxlength="120" placeholder="e.g. Tuition" class="w-full rounded-lg border border-line px-3 py-2 text-sm">
+          </div>
+          <div>
+            <label class="mb-1 block text-xs font-semibold" for="charged">Charged</label>
+            <select name="charged" id="charged" class="rounded-lg border border-line px-3 py-2 text-sm">
+              <option value="per_term">Per term</option>
+              <option value="per_session">Per session</option>
+              <option value="optional">Optional</option>
+            </select>
+          </div>
+          <button class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white">Add</button>
+        </form>
+      </div>
+      <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-line">
+        <p class="mb-2 font-semibold">Set a price for a class</p>
+        <form method="post" action="{% url 'fees:price_set' %}" class="flex flex-wrap items-end gap-2">
+          {% csrf_token %}
+          <div>
+            <label class="mb-1 block text-xs font-semibold" for="fee-item">Fee item</label>
+            <select name="fee_item" id="fee-item" class="rounded-lg border border-line px-3 py-2 text-sm">
+              {% for item in items %}
+                <option value="{{ item.pk }}">{{ item.name }}</option>
+              {% empty %}
+                <option value="">Add a fee item first</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="mb-1 block text-xs font-semibold" for="school_class">Class</label>
+            <select name="school_class" id="school_class" class="rounded-lg border border-line px-3 py-2 text-sm">
+              {% for c in classes %}
+                <option value="{{ c.pk }}">{{ c.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="mb-1 block text-xs font-semibold" for="amount">Amount (NGN)</label>
+            <input type="number" name="amount" id="amount" min="1" step="0.01" required class="w-32 rounded-lg border border-line px-3 py-2 text-sm">
+          </div>
+          <button class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white">Save price</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="overflow-x-auto rounded-2xl bg-white shadow-sm ring-1 ring-line">
+      <table class="w-full text-left text-sm">
+        <thead class="border-b border-line text-xs uppercase tracking-wide text-muted">
+          <tr>
+            <th class="px-4 py-3 font-semibold">Fee item</th>
+            <th class="px-4 py-3 font-semibold">Charged</th>
+            <th class="px-4 py-3 font-semibold">Prices</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+            <tr class="border-b border-line last:border-0 align-top">
+              <td class="px-4 py-3 font-semibold text-ink">{{ item.name }}</td>
+              <td class="px-4 py-3">{{ item.get_charged_display }}</td>
+              <td class="px-4 py-3">
+                {% if item.prices.all %}
+                  <span class="flex flex-wrap gap-2">
+                    {% for price in item.prices.all %}
+                      <span class="rounded-lg bg-slate-100 px-2 py-1 text-xs">{{ price.school_class }}: &#8358;{{ price.amount|intcomma }}</span>
+                    {% endfor %}
+                  </span>
+                {% else %}
+                  <span class="text-muted">No prices yet — set one above.</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="3" class="px-4 py-6 text-center text-muted">No fee items for this session yet. Add the first one above.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+{% endblock %}
