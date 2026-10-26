@@ -118,7 +118,6 @@ def test_class_teacher_section_must_belong_to_the_class(school_a, make_member, m
             session=make_session(school_a), teacher=make_member(school_a),
         )
 
-
 @pytest.mark.django_db
 def test_seed_creates_the_standard_structure(school_a):
     assert seed_standard_structure(school_a) is True

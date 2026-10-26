@@ -1,6 +1,16 @@
 from functools import wraps
 from django.contrib.auth.views import redirect_to_login
 from django.core.exceptions import PermissionDenied
+from .models import Membership
+
+MANAGE_STRUCTURE_ROLES = (Membership.Role.OWNER, Membership.Role.ADMIN)
+
+def require_role(request, roles):
+    """Raise PermissionDenied unless the user is acting under one of the roles."""
+    membership = getattr(request, "membership", None)
+    if membership is None or membership.role not in roles:
+        raise PermissionDenied
+    return membership
 
 def role_required(*roles):
     """Allow a view only for users acting under one of the given roles."""
