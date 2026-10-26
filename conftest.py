@@ -41,8 +41,8 @@ def make_session():
 
 @pytest.fixture
 def make_request(make_member):
-    def make(school, role=Membership.Role.ADMIN):
-        member = make_member(school, role)
+    def make(school, role=Membership.Role.ADMIN, member=None):
+        member = member or make_member(school, role)
         request = RequestFactory().get("/")
         request.user = member.user
         request.membership = member
