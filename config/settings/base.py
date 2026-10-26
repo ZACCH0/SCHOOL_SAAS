@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     "apps.classes",
     "apps.subjects",
     "apps.students",
+    "apps.attendance",
 
 
 ]
