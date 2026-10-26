@@ -19,6 +19,9 @@ def _clean_str(value):
 def _upsert_history(request, student, session=None):
     """One history row per student per session, matching the student's current class."""
     session = session or current_session(student.school)
+    if session is None:
+        return
+    session = session or current_session(student.school)
     section = student.current_section
     if section and section.school_class_id != student.current_class_id:
         section = None

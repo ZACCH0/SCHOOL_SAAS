@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Students{% endblock %}
+
+{% block content %}
+  {% url 'students:create' as new_url %}
+  {% include "components/page_header.html" with title="Students" subtitle="Everyone enrolled in your school." action_url=new_url action_label="Add student" %}
+  <form method="get" class="mb-4 flex flex-wrap gap-2">
+    <input type="text" name="q" value="{{ query }}" placeholder="Search name or admission number"
+           class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-ink">
+    <select name="status" class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-ink">
+      <option value="">Any status</option>
+      <option value="active" {% if chosen_status == 'active' %}selected{% endif %}>Active</option>
+      <option value="graduated" {% if chosen_status == 'graduated' %}selected{% endif %}>Graduated</option>
+      <option value="withdrawn" {% if chosen_status == 'withdrawn' %}selected{% endif %}>Withdrawn</option>
+      <option value="suspended" {% if chosen_status == 'suspended' %}selected{% endif %}>Suspended</option>
+      <option value="transferred" {% if chosen_status == 'transferred' %}selected{% endif %}>Transferred</option>
+    </select>
+    <select name="class" class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-ink">
+      <option value="">All classes</option>
+      {% for school_class in classes %}
+        <option value="{{ school_class.pk }}" {% if chosen_class == school_class.pk %}selected{% endif %}>{{ school_class.name }}</option>
+      {% endfor %}
+    </select>
+    <button class="rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white">Filter</button>
+  </form>
+  {% if page_obj.object_list %}
+    <div class="overflow-x-auto rounded-2xl bg-white shadow-sm ring-1 ring-line">
+      <table class="w-full text-left text-sm">
+        <thead class="border-b border-line bg-slate-50 text-xs uppercase text-slate-500">
+          <tr>
+            <th class="px-4 py-3">Name</th>
+            <th class="px-4 py-3">Admission no.</th>
+            <th class="px-4 py-3">Class</th>
+            <th class="px-4 py-3">Status</th>
+            <th class="px-4 py-3"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for student in page_obj.object_list %}
+            <tr class="border-b border-line">
+              <td class="px-4 py-3 font-semibold">{{ student.last_name }}, {{ student.first_name }}</td>
+              <td class="px-4 py-3">{{ student.admission_number }}</td>
+              <td class="px-4 py-3">{{ student.current_class|default:"-" }}{% if student.current_section %} {{ student.current_section }}{% endif %}</td>
+              <td class="px-4 py-3">
+                {% if student.status == "active" %}
+                  {% include "components/status_chip.html" with kind="ok" label="Active" %}
+                {% elif student.status == "suspended" %}
+                  {% include "components/status_chip.html" with kind="warn" label="Suspended" %}
+                {% else %}
+                  {% include "components/status_chip.html" with kind="neutral" label=student.status %}
+                {% endif %}
+              </td>
+              <td class="px-4 py-3 text-right"><a class="font-semibold text-brand-700" href="{% url 'students:detail' student.pk %}">Open</a></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% include "components/pagination.html" %}
+  {% else %}
+    {% include "components/empty_state.html" with title="No students found" text="Add a student or change the filters." action_url=new_url action_label="Add student" %}
+  {% endif %}
+{% endblock %}

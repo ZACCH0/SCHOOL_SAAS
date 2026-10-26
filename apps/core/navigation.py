@@ -9,6 +9,7 @@ MANAGERS = [Role.OWNER, Role.ADMIN]
 # Add one line here when a module's page exists.
 NAV_ITEMS = [
     ("Dashboard", "core:dashboard", None),
+    ("Students", "students:list", MANAGERS),
     ("Classes", "classes:list", MANAGERS),
     ("Subjects", "subjects:list", MANAGERS),
 ]

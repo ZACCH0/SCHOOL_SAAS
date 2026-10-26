@@ -4,8 +4,8 @@ Single source of truth for where the project stands. Rules for updating it are i
 
 **Last updated:** 2026-10-26
 **Current phase:** Phase 3 wrap-up of classes and subjects (T8)
-**Current task:** T9b services built (`apps/students/services.py`: create student with class history, update, status change, move with history upsert, guardian link/unlink with single primary rule, all with role checks, tenant checks and audit entries; 186 tests passing). Not yet verified by owner in the browser.
-**Next task:** T9c forms, views, URLs and templates for students and guardians (owner/admin only, like classes/subjects), then T7d/T7e accounts and login. Push still pending owner approval.
+**Current task:** T9c student pages built (list with search/status/class filters + pagination, add/edit forms, detail page with status, class move, class history, guardians; sidebar "Students" for owner/admin; 199 tests passing; CSS rebuilt; browser-checked live). Not yet verified by owner in the browser.
+**Next task:** Owner checks the Students screens, then T10 Attendance. Push still pending owner approval; student pages then go to the UI agent for design-canvas styling.
 
 ## Task board
 
@@ -25,7 +25,7 @@ Statuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 | T7c | Password reset (email based) | DONE (verified) | 53 passed |
 | T7d | Admin resets a user's password (temporary password, forced change) for users without email | TODO (proposed) | Owner has not yet approved |
 | T8 | Classes, sections, levels (Primary/JSS/SS activatable), subjects, class subjects, teacher assignments per session, class teacher | DONE (unverified by owner in browser) | T8a DONE (verified, 118 passed). T8b-1 services DONE (verified, 141 passed). T8b-2 views, forms, templates DONE (verified, 162 passed on 2026-10-26). Owner chose sections as a separate table (option A) |
-| T9 | Students and parents (parent with many children, history across promotions) | IN PROGRESS | T9a data model DONE (176 passed). T9b services DONE (186 tests passed on 2026-10-26). T9c views next |
+| T9 | Students and parents (parent with many children, history across promotions) | DONE (unverified by owner in browser) | T9a data model DONE (176 passed). T9b services DONE (186 passed). T9c pages DONE (199 passed on 2026-10-26). Tenant isolation, role checks and audit verified in tests |
 | T10 | Attendance | TODO | |
 | T11 | Admissions | TODO | |
 | T12 | Assessments, results, grading, workflow, report cards (PDF) | TODO | |
@@ -47,6 +47,14 @@ Statuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 | T21 | School public home page with gallery, news, admissions; own subdomain per school | TODO | Build after T9 to T13 |
 
 ## Task log (newest first)
+
+### T9c Student pages and a history bug fix (2026-10-26, 199 passed)
+- `apps/students/forms.py`: StudentForm (create with admission number), StudentDetailForm (edit; admission number locked), GuardianForm (only that school's parents, excludes already-linked)
+- `apps/students/views.py`: list with q/status/class filters and pagination (25/page), create, edit, detail, status (POST only), move, guardian add/remove. All owner/admin only, thin views over services
+- URLs `/students/...`; nav entry "Students" for owner and admin; templates `students/student_list.html`, `students/student_detail.html` reuse the shared components
+- Bug fixed in service: creating or moving a student in a school with no current session no longer crashes (history row is skipped until a current session exists)
+- 13 view tests; `static/css/output.css` rebuilt; live check: list 200 with pagination, detail/edit/create 200, teacher 403, foreign school 404
+- Next: UI agent may restyle the students screen set with the design canvas
 
 ### T9b Student services (2026-10-26, 186 passed)
 - `apps/students/services.py`: `create_student` (admission number friendly message, auto class-history row for the current session), `update_student` (audit shows old and new values), `set_student_status`, `move_student` (updates history row in the same transaction), `add_guardian` (Parent role enforced, only one primary guardian per student), `remove_guardian`
