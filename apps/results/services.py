@@ -71,7 +71,7 @@ def _component_scope(sheet):
     return Q(level__isnull=True) | Q(level=sheet.school_class.level_id)
 
 
-def _applicable_components(sheet):
+def components_for_sheet(sheet):
     return AssessmentComponent.objects.for_school(sheet.school).filter(
         _component_scope(sheet),
         session=sheet.period.session,
@@ -192,7 +192,7 @@ def submit_sheet(request, sheet):
     _ensure_editable(sheet)
     ensure_can_edit_scores(request, sheet)
 
-    components = list(_applicable_components(sheet))
+    components = list(components_for_sheet(sheet))
     if not components:
         raise ValidationError("This session has no assessment components set up.")
     if not sheet.scores.exists():
