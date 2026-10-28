@@ -5,7 +5,7 @@ Single source of truth for where the project stands. Rules for updating it are i
 **Last updated:** 2026-10-28
 **Current phase:** T12 Results — T12a verified, T12b services DONE (unverified), T12c pages next
 **Current task:** T12b services in `apps/results/services.py` done: `save_score` (draft sheets only; teacher only for an assigned subject — class-wide or exact section; owner/admin any; score capped by component max; component must match session and class level), grading (percentage = Σ(value/max×weight) ÷ Σweights × 100, grade from the session's active scale, boundaries snapshotted into `scale_snapshot`, result recomputed on every save), `submit_sheet` (refuses empty sheets and pupils missing component scores; captures `weights_snapshot`; grades everyone), `review/approve/publish` (owner/admin, strict order, actor FKs), `send_back` (submitted/reviewed → draft, clears submitter + snapshot; refused once approved). Audit entry per action. 305 tests passed 2026-10-28.
-**Next task:** T12c pages in `apps/results/views.py` + templates: score-entry grid per sheet (my-subjects view for teachers, all sheets for owner/admin), review list with workflow buttons, report card HTML. Then T12d PDF (WeasyPrint).
+**Next task:** T12c pages in `apps/results/views.py` + templates (STARTED, nothing visible yet): results home (sheets for a term; owner/admin all, teacher only assigned subjects), sheet page with per-pupil score form (draft + allowed only), workflow buttons (submit/review/approve/publish/send-back), report card HTML (published sheets only). Then T12d PDF (WeasyPrint). Only preparatory step done: `components_for_sheet` in services is now public for the views.
 
 ## Task board
 
@@ -47,6 +47,9 @@ Statuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 | T21 | School public home page with gallery, news, admissions; own subdomain per school | TODO | Build after T9 to T13 |
 
 ## Task log (newest first)
+
+### Session close (2026-10-28)
+- T12a verified by owner; pilot results config seeded; T12b services built (305 passed); T12c prepared (`components_for_sheet` made public, 48 results tests pass). Pushing to GitHub; T12c pages continue next session.
 
 ### T12b Results services (2026-10-28, 305 passed)
 - `apps/results/services.py`: `save_score`, `submit_sheet`, `review_sheet`, `approve_sheet`, `publish_sheet`, `send_back`; helpers `ensure_can_edit_scores` (teacher needs a TeacherAssignment for the sheet's session/class/subject; class-wide assignment covers section sheets), `_applicable_components` (school-wide + class level), `_active_scale` (first active scale of the session), `_recompute_student` (weighted percentage, total, grade, `scale_snapshot`)
