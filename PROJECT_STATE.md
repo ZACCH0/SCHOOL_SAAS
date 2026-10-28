@@ -3,9 +3,9 @@
 Single source of truth for where the project stands. Rules for updating it are in `AGENTS.md` section 9.
 
 **Last updated:** 2026-10-28
-**Current phase:** T12 Results — T12a models DONE (unverified), T12b services next
-**Current task:** T12a of the Results module done: new app `apps/results` with per-session grade scales + boundaries, assessment components (school-wide or level-scoped), result sheets (per class/section + subject + term, 5-state workflow status), scores (one per pupil/component) and subject results (total + percentage + grade + scale snapshot). 281 tests passed 2026-10-28. Also fixed a date-fragile fees test (`TODAY` pinned to 2026-10-26 made the future-payment test stop raising once the calendar caught up; now uses `timezone.localdate() + 2 days`).
-**Next task:** T12b services in `apps/results/services.py`: enter/edit scores on a draft sheet (teacher only for assigned subject, owner/admin any), compute weighted percentage + grade from the active scale and snapshot it, submit (teacher) → review → approve → publish (owner/admin) with "send back" allowed until approved, audit each transition, refuse edits to approved sheets. Then T12c pages (score entry, review list, report card HTML), then T12d PDF.
+**Current phase:** T12 Results — T12a verified, T12b services DONE (unverified), T12c pages next
+**Current task:** T12b services in `apps/results/services.py` done: `save_score` (draft sheets only; teacher only for an assigned subject — class-wide or exact section; owner/admin any; score capped by component max; component must match session and class level), grading (percentage = Σ(value/max×weight) ÷ Σweights × 100, grade from the session's active scale, boundaries snapshotted into `scale_snapshot`, result recomputed on every save), `submit_sheet` (refuses empty sheets and pupils missing component scores; captures `weights_snapshot`; grades everyone), `review/approve/publish` (owner/admin, strict order, actor FKs), `send_back` (submitted/reviewed → draft, clears submitter + snapshot; refused once approved). Audit entry per action. 305 tests passed 2026-10-28.
+**Next task:** T12c pages in `apps/results/views.py` + templates: score-entry grid per sheet (my-subjects view for teachers, all sheets for owner/admin), review list with workflow buttons, report card HTML. Then T12d PDF (WeasyPrint).
 
 ## Task board
 
@@ -28,7 +28,7 @@ Statuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 | T9 | Students and parents (parent with many children, history across promotions) | DONE (verified by owner) | T9a data model, T9b services, T9c pages. 199 tests passed; owner consulted on admission numbers: manual entry stays, no auto-numbering for now |
 | T10 | Attendance | DONE (unverified by owner in browser) | T10a model, T10b services, T10c pages. 227 tests passed on 2026-10-26; tenant isolation, role matrix, audit and read-only history covered |
 | T11 | Admissions | TODO | |
-| T12 | Assessments, results, grading, workflow, report cards (PDF) | IN PROGRESS | T12a models DONE (verified by owner 2026-10-28): GradeScale, GradeBoundary, AssessmentComponent, ResultSheet, Score, SubjectResult in `apps/results`; 27 model tests; 284 total passed; pilot config seeded (scale, components, 11 draft sheets, 33 scores) |
+| T12 | Assessments, results, grading, workflow, report cards (PDF) | IN PROGRESS | T12a models DONE (verified by owner 2026-10-28). T12b services DONE (unverified): save_score with teacher-assignment checks, weighted grading + scale snapshot, submit (completeness + weights snapshot), review/approve/publish, send_back until approved; 24 service tests; 305 total passed |
 | T13 | Finance: fee structures, invoices, payments, receipts, balances | DONE (unverified by owner in browser) | T13a model, T13b services, T13c pages. 257 tests passed on 2026-10-26; idempotent payments, no overpay, audit, tenant isolation |
 | T14 | Dashboards, announcements, notifications, timetable | TODO | |
 | T15 | Documents, analytics, audit log | TODO | |
@@ -47,6 +47,14 @@ Statuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 | T21 | School public home page with gallery, news, admissions; own subdomain per school | TODO | Build after T9 to T13 |
 
 ## Task log (newest first)
+
+### T12b Results services (2026-10-28, 305 passed)
+- `apps/results/services.py`: `save_score`, `submit_sheet`, `review_sheet`, `approve_sheet`, `publish_sheet`, `send_back`; helpers `ensure_can_edit_scores` (teacher needs a TeacherAssignment for the sheet's session/class/subject; class-wide assignment covers section sheets), `_applicable_components` (school-wide + class level), `_active_scale` (first active scale of the session), `_recompute_student` (weighted percentage, total, grade, `scale_snapshot`)
+- Rules: edits only on DRAFT (send back first after submission); submit requires every scored pupil to have every applicable component (stops inflated partial percentages); grade lookup = highest boundary ≤ percentage; workflow advance owner/admin only, strict order; send_back from submitted/reviewed only
+- Audit actions: `results.score_saved` (with previous value), `results.sheet_submitted`, `results.sheet_reviewed`, `results.sheet_approved`, `results.sheet_published`, `results.sheet_sent_back`
+- Tests `apps/results/test_services.py` (24): role matrix (assigned/unassigned/wrong-subject teacher, parent/bursar, owner/admin), section vs class-wide assignment, cross-school refused, max-score and level-scope refusals, recompute on resave (66.7 B → 96.7 A), submit completeness, snapshot contents, workflow order enforcement, teacher cannot review/publish, send-back rules, boundary math (86.0 → A)
+- Bugs caught by tests: aliasing bug — `score = previous` then `score.value = new` mutated `previous` before the audit line, so `previous` logged the NEW value (fixed by capturing `previous_value` first); audit timestamps within the same second make `.latest()` unstable in tests (order by `-id`)
+- No migrations. Note: `sheet.reviewed_by` is a Membership, so tests use `.role` on it
 
 ### Pilot results config seed (2026-10-28, T12a verified by owner)
 - Owner verified T12a (browser + tests: 284 passed). Filled the pilot school's results config by script so the owner can feel it without manual entry:
