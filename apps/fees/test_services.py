@@ -2,6 +2,7 @@ import pytest
 from datetime import date, timedelta
 from decimal import Decimal
 from django.core.exceptions import PermissionDenied, ValidationError
+from django.utils import timezone
 
 from apps.academics.models import AcademicSession
 from apps.classes.models import Level, SchoolClass
@@ -200,7 +201,7 @@ def test_payment_date_cannot_be_in_the_future(school_a, session, period, pupils,
     inv = Invoice.objects.first()
     request = make_request(school_a, Role.BURSAR, member=bursar)
     with pytest.raises(ValidationError):
-        record_payment(request, inv, "1000", "cash", "RCP-6", TODAY + timedelta(days=2))
+        record_payment(request, inv, "1000", "cash", "RCP-6", timezone.localdate() + timedelta(days=2))
 
 
 @pytest.mark.django_db

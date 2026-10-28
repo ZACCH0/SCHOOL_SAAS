@@ -2,10 +2,10 @@
 
 Single source of truth for where the project stands. Rules for updating it are in `AGENTS.md` section 9.
 
-**Last updated:** 2026-10-26
-**Current phase:** Phase 3 wrap-up of classes and subjects (T8)
-**Current task:** T13 Finance DONE in code (unverified in browser by owner): fee structure per session with per-class prices (per term / per session / optional), one-click invoice generation for a term (idempotent, only active pupils, only classes with prices), invoice list with search/class/status filters and reliable totals, invoice detail with payment recording (idempotent reference, no overpay, no future dates), payments list, printable receipt with previous/remaining balance. 257 tests passed 2026-10-26. Dev DB seeded: 73 invoices for First Term, 1 part payment recorded.
-**Next task:** Session paused here (2026-10-26). Everything is committed AND pushed to GitHub (origin/main up to date). When you resume: 1) Owner still needs to browser-verify Attendance UI and Finance pages (fees tabs: Overview / Fee structure / Invoices / Payments; demo invoice FSS-RCPT-001 has a part payment). 2) Then start T12 Results (score entry for subject teachers -> grade snapshots -> approval workflow -> report card PDF) — the last core academic module. Remaining after that: dashboards with real data, admissions (T11), announcements, timetable, parent portal, analytics, public website, deployment hardening. Small debt: switch `CheckConstraint(check=...)` to `condition=` in apps/fees/models.py during a cleanup task.
+**Last updated:** 2026-10-28
+**Current phase:** T12 Results — T12a models DONE (unverified), T12b services next
+**Current task:** T12a of the Results module done: new app `apps/results` with per-session grade scales + boundaries, assessment components (school-wide or level-scoped), result sheets (per class/section + subject + term, 5-state workflow status), scores (one per pupil/component) and subject results (total + percentage + grade + scale snapshot). 281 tests passed 2026-10-28. Also fixed a date-fragile fees test (`TODAY` pinned to 2026-10-26 made the future-payment test stop raising once the calendar caught up; now uses `timezone.localdate() + 2 days`).
+**Next task:** T12b services in `apps/results/services.py`: enter/edit scores on a draft sheet (teacher only for assigned subject, owner/admin any), compute weighted percentage + grade from the active scale and snapshot it, submit (teacher) → review → approve → publish (owner/admin) with "send back" allowed until approved, audit each transition, refuse edits to approved sheets. Then T12c pages (score entry, review list, report card HTML), then T12d PDF.
 
 ## Task board
 
@@ -28,7 +28,7 @@ Statuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 | T9 | Students and parents (parent with many children, history across promotions) | DONE (verified by owner) | T9a data model, T9b services, T9c pages. 199 tests passed; owner consulted on admission numbers: manual entry stays, no auto-numbering for now |
 | T10 | Attendance | DONE (unverified by owner in browser) | T10a model, T10b services, T10c pages. 227 tests passed on 2026-10-26; tenant isolation, role matrix, audit and read-only history covered |
 | T11 | Admissions | TODO | |
-| T12 | Assessments, results, grading, workflow, report cards (PDF) | TODO | |
+| T12 | Assessments, results, grading, workflow, report cards (PDF) | IN PROGRESS | T12a models DONE (unverified): GradeScale, GradeBoundary, AssessmentComponent, ResultSheet, Score, SubjectResult in `apps/results`; 24 model tests; 281 total passed |
 | T13 | Finance: fee structures, invoices, payments, receipts, balances | DONE (unverified by owner in browser) | T13a model, T13b services, T13c pages. 257 tests passed on 2026-10-26; idempotent payments, no overpay, audit, tenant isolation |
 | T14 | Dashboards, announcements, notifications, timetable | TODO | |
 | T15 | Documents, analytics, audit log | TODO | |
@@ -47,6 +47,19 @@ Statuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 | T21 | School public home page with gallery, news, admissions; own subdomain per school | TODO | Build after T9 to T13 |
 
 ## Task log (newest first)
+
+### T12a Results models (2026-10-28, 281 passed)
+- New app `apps/results` registered in settings. Models (all `ValidatedSchoolModel`):
+  - `GradeScale` per session (is_active archive flag) + `GradeBoundary` (grade label, min_percent 0-100, remark, optional points; unique label + unique boundary start per scale)
+  - `AssessmentComponent` per session, school-wide by default or scoped to one Level; name, max_score, weight (positive)
+  - `ResultSheet` per (period, class/section, subject) with 5-state workflow (draft/submitted/reviewed/approved/published), actor FKs (submitted/reviewed/approved/published_by) and `weights_snapshot` JSON captured at submission time
+  - `Score` (sheet, student, component, value) — one per pupil/component, session must match the sheet's term, pupil must be in the sheet's class/section
+  - `SubjectResult` (sheet, student) — computed total, percentage, grade label + remark + `scale_snapshot` JSON (TECH: snapshot of grading used)
+- Migration `results.0001_initial` created and applied
+- Tests `apps/results/test_models.py`: 24 tests — config uniqueness/percent ranges, tenant isolation (session/class/subject from another school rejected), sheet uniqueness incl. two sections, score rules, snapshots
+- Side fix: `apps/fees/test_services.py::test_payment_date_cannot_be_in_the_future` was pinned to `TODAY = 2026-10-26`; once the real calendar passed the 26th it stopped testing the rule. Now computes the future date from `timezone.localdate() + timedelta(days=2)`
+- Decisions (owner approved 2026-10-28): config per session (like fees); keep all 5 workflow states; ranking = per-school toggle; report card HTML first, PDF (WeasyPrint) in T12d
+- Known issue: fees `CheckConstraint(check=...)` deprecation warnings still present (existing debt; new app uses `condition=`)
 
 ### T13 Finance complete (2026-10-26, 257 passed)
 - T13a `apps/fees/models.py`: FeeItem (per session, charged per term / per session / optional), FeeItemPrice (amount per class), Invoice (number INV-xxxx per school, status unpaid/part_paid/paid, issue/due dates), InvoiceItem (description+amount snapshot so later fee changes never alter issued invoices), Payment (amount, method cash/transfer/POS/cheque, reference unique per school case-insensitive, received_by, paid_on). DB constraints: unique numbers/references, positive amounts, due >= issue
