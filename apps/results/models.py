@@ -197,8 +197,8 @@ class ResultSheet(ValidatedSchoolModel):
                 name="one_sheet_per_section_subject_period",
             ),
             models.CheckConstraint(
-                condition=Q(submitted_by__isnull=True) | ~Q(status__in=["draft"]),
-                name="submitted_needs_submitter",
+                condition=Q(status__in=["draft"]) | Q(submitted_by__isnull=False),
+                name="submitted_or_later_needs_submitter",
             ),
         ]
         indexes = [
@@ -262,6 +262,10 @@ class Score(ValidatedSchoolModel):
             and self.component.session_id != self.sheet.period.session_id
         ):
             raise ValidationError("The component belongs to another session.")
+        if self.component_id and self.value is not None and self.value > self.component.max_score:
+            raise ValidationError(
+                f"The score is above the component's maximum of {self.component.max_score}."
+            )
         if self.sheet_id and self.student_id:
             if self.student.current_class_id != self.sheet.school_class_id:
                 raise ValidationError("That pupil is not currently in this class.")

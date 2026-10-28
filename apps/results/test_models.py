@@ -211,7 +211,21 @@ def test_components_max_score_and_weight_must_be_positive(school_a, session):
 # --- result sheets ---
 
 
-def test_sheet_starts_in_draft_with_no_snapsot_yet(sheet):
+def test_draft_sheet_may_record_who_entered_scores(sheet, make_member):
+    sheet.submitted_by = make_member(sheet.school, role=Role.TEACHER)
+    sheet.save()
+
+
+def test_submitted_sheet_without_a_submitter_rejected(school_a, primary_three, period, english):
+    sheet = ResultSheet(
+        school=school_a, period=period, school_class=primary_three,
+        subject=english, status=ResultSheet.Status.SUBMITTED,
+    )
+    with pytest.raises(IntegrityError), transaction.atomic():
+        sheet.save()
+
+
+def test_sheet_starts_in_draft_with_no_snapshot_yet(sheet):
     assert sheet.status == ResultSheet.Status.DRAFT
     assert sheet.weights_snapshot is None
 
@@ -293,7 +307,7 @@ def test_score_rejected_for_pupil_of_another_class(sheet, school_a, level):
         date_of_birth=date(2018, 1, 20), admission_number="FSS/2026/002",
         current_class=other_class,
     )
-    exam = AssessmentComponent.objects.first() or AssessmentComponent.objects.create(
+    exam = AssessmentComponent.objects.create(
         school=school_a, session=sheet.period.session, name="Exam",
         max_score=Decimal("60"), weight=Decimal("60"),
     )
@@ -308,6 +322,14 @@ def test_score_cannot_be_negative(sheet, pupil, exam):
         Score.objects.create(
             school=sheet.school, sheet=sheet, student=pupil, component=exam, value=Decimal("-5"),
         )
+
+
+def test_score_above_component_max_rejected(sheet, pupil, exam):
+    with pytest.raises(ValidationError) as info:
+        Score.objects.create(
+            school=sheet.school, sheet=sheet, student=pupil, component=exam, value=Decimal("70"),
+        )
+    assert "maximum" in str(info.value)
 
 
 def test_one_score_per_pupil_per_component(sheet, pupil, exam):
