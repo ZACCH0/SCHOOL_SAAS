@@ -28,7 +28,7 @@ Statuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 | T9 | Students and parents (parent with many children, history across promotions) | DONE (verified by owner) | T9a data model, T9b services, T9c pages. 199 tests passed; owner consulted on admission numbers: manual entry stays, no auto-numbering for now |
 | T10 | Attendance | DONE (unverified by owner in browser) | T10a model, T10b services, T10c pages. 227 tests passed on 2026-10-26; tenant isolation, role matrix, audit and read-only history covered |
 | T11 | Admissions | TODO | |
-| T12 | Assessments, results, grading, workflow, report cards (PDF) | IN PROGRESS | T12a models DONE (unverified): GradeScale, GradeBoundary, AssessmentComponent, ResultSheet, Score, SubjectResult in `apps/results`; 24 model tests; 281 total passed |
+| T12 | Assessments, results, grading, workflow, report cards (PDF) | IN PROGRESS | T12a models DONE (verified by owner 2026-10-28): GradeScale, GradeBoundary, AssessmentComponent, ResultSheet, Score, SubjectResult in `apps/results`; 27 model tests; 284 total passed; pilot config seeded (scale, components, 11 draft sheets, 33 scores) |
 | T13 | Finance: fee structures, invoices, payments, receipts, balances | DONE (unverified by owner in browser) | T13a model, T13b services, T13c pages. 257 tests passed on 2026-10-26; idempotent payments, no overpay, audit, tenant isolation |
 | T14 | Dashboards, announcements, notifications, timetable | TODO | |
 | T15 | Documents, analytics, audit log | TODO | |
@@ -47,6 +47,15 @@ Statuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 | T21 | School public home page with gallery, news, admissions; own subdomain per school | TODO | Build after T9 to T13 |
 
 ## Task log (newest first)
+
+### Pilot results config seed (2026-10-28, T12a verified by owner)
+- Owner verified T12a (browser + tests: 284 passed). Filled the pilot school's results config by script so the owner can feel it without manual entry:
+  - Grade scale "Primary Grading Scale" (2026/2027): A 70 Excellent, B 60 Very Good, C 50 Good, D 45 Fair, F 0 Needs improvement
+  - Assessment components (school-wide, all levels): First Test 20/20, Second Test 20/20, Examination 60/60 (classic 40% CA + 60% exam; editable in admin)
+  - 11 draft ResultSheets (First Term 2026/2027) — one per subject for Primary 1 A
+  - 33 Scores on the Mathematics sheet for its 11 pupils (seed 42, no pupil below 40% of a component); totals/grades left empty on purpose — computing them is T12b
+- Note: a pre-existing "WAEC" scale (owner's admin experiment) contains a boundary labelled "70" from 50% — harmless, owner may delete it in admin
+- Seed script (throwaway, in temp): no audit entries, like the earlier pupil seed; NOT real school data — replace before live use
 
 ### T12a Results models (2026-10-28, 281 passed)
 - New app `apps/results` registered in settings. Models (all `ValidatedSchoolModel`):
