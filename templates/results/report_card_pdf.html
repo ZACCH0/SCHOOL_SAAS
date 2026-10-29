@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Report card — {{ pupil.first_name }} {{ pupil.last_name }}</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 1.4cm 1.4cm 1.6cm;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Times New Roman", "Liberation Serif", serif;
+      font-size: 10.5pt;
+      color: #0f172a;
+    }
+    .school-name {
+      font-size: 17pt;
+      font-weight: bold;
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 0.5pt;
+      color: #115e59;
+    }
+    .school-sub {
+      font-size: 9.5pt;
+      text-align: center;
+      margin-top: 2pt;
+    }
+    .report-title {
+      margin-top: 10pt;
+      padding: 4pt 0;
+      text-align: center;
+      font-weight: bold;
+      font-size: 12pt;
+      letter-spacing: 1.5pt;
+      border-top: 2pt solid #0f766e;
+      border-bottom: 1pt solid #0f766e;
+    }
+    .details {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10pt;
+      width: 100%;
+    }
+    .details td, .details th {
+      border: 0.8pt solid #94a3b8;
+      padding: 4pt 6pt;
+      font-weight: normal;
+      text-align: left;
+    }
+    .details th {
+      background: #ccfbf1;
+      font-weight: bold;
+      width: 22%;
+      white-space: nowrap;
+    }
+    table.results {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10pt;
+    }
+    table.results th, table.results td {
+      border: 0.8pt solid #94a3b8;
+      padding: 3.5pt 5pt;
+      text-align: left;
+    }
+    table.results th {
+      background: #ccfbf1;
+      font-size: 9pt;
+      text-transform: uppercase;
+      letter-spacing: 0.4pt;
+    }
+    table.results td.num, table.results th.num { text-align: center; }
+    table.results .total { font-weight: bold; }
+    table.results tr.summary td {
+      background: #f8fafc;
+      font-weight: bold;
+    }
+    .caption { margin-top: 12pt; font-size: 9pt; color: #475569; }
+    .signatures {
+      width: 100%;
+      margin-top: 34pt;
+      border-collapse: collapse;
+    }
+    .signatures td { width: 45%; }
+    .signatures .line {
+      border-top: 0.8pt solid #0f172a;
+      padding-top: 3pt;
+      font-size: 9.5pt;
+      text-align: center;
+    }
+    .spacer { width: 10%; }
+    .stamp {
+      margin-top: 24pt;
+      font-size: 9pt;
+      color: #475569;
+      text-align: center;
+      font-style: italic;
+    }
+    .empty {
+      margin-top: 24pt;
+      text-align: center;
+      font-size: 11pt;
+      color: #475569;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <p class="school-name">{{ pupil.school.name }}</p>
+    <p class="school-sub">
+      {{ pupil.school.address|default:"" }}{% if pupil.school.address %} &middot; {% endif %}
+      {{ pupil.school.town|default:"" }}{% if pupil.school.town and pupil.school.state %}, {% endif %}{{ pupil.school.state|default:"" }}
+      {% if pupil.school.phone %} &middot; {{ pupil.school.phone }}{% endif %}
+    </p>
+    <p class="report-title">TERMINAL REPORT &mdash; {{ period.name|upper }}, {{ period.session.name }} SESSION</p>
+  </header>
+
+  <table class="details">
+    <tr>
+      <th>Name of pupil</th>
+      <td colspan="3">{{ pupil.last_name }}, {{ pupil.first_name }}</td>
+    </tr>
+    <tr>
+      <th>Admission no.</th>
+      <td>{{ pupil.admission_number }}</td>
+      <th>Class</th>
+      <td>{{ pupil.current_class }}{% if pupil.current_section %} &mdash; {{ pupil.current_section.name }}{% endif %}</td>
+    </tr>
+    <tr>
+      <th>Sex</th>
+      <td>{{ pupil.sex|capfirst }}</td>
+      <th>Term</th>
+      <td>{{ period.name }} ({{ period.start_date }} &ndash; {{ period.end_date }})</td>
+    </tr>
+  </table>
+
+  {% if subject_rows %}
+    <table class="results">
+      <thead>
+        <tr>
+          <th class="num" style="width:4%">S/N</th>
+          <th style="width:22%">Subject</th>
+          {% for column in columns %}<th class="num">{{ column }}</th>{% endfor %}
+          <th class="num" style="width:8%">Total</th>
+          <th class="num" style="width:7%">%</th>
+          <th class="num" style="width:7%">Grade</th>
+          <th style="width:20%">Remark</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in subject_rows %}
+          <tr>
+            <td class="num">{{ forloop.counter }}</td>
+            <td class="total">{{ row.sheet.subject.name }}</td>
+            {% for cell in row.cells %}
+              <td class="num">{% if cell %}{{ cell.1 }}{% else %}&mdash;{% endif %}</td>
+            {% endfor %}
+            <td class="num total">{% if row.result %}{{ row.result.total }}{% else %}&mdash;{% endif %}</td>
+            <td class="num">{% if row.result %}{{ row.result.percentage }}{% else %}&mdash;{% endif %}</td>
+            <td class="num total">{% if row.result and row.result.grade %}{{ row.result.grade }}{% else %}&mdash;{% endif %}</td>
+            <td>{% if row.result %}{{ row.result.grade_remark|default:"&mdash;" }}{% else %}&mdash;{% endif %}</td>
+          </tr>
+        {% endfor %}
+        <tr class="summary">
+          <td class="num"></td>
+          <td colspan="{{ columns|length|add:1 }}">Average (mean of subject percentages)</td>
+          <td class="num" colspan="3">{% if average %}{{ average }}{% else %}&mdash;{% endif %}</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+
+    {% if scale_lines %}
+      <p class="caption">
+        Grading scale:
+        {% for line in scale_lines %}{{ line.grade }} from {{ line.min_percent }}%{% if line.remark %} ({{ line.remark }}){% endif %}{% if not forloop.last %}; {% endif %}{% endfor %}
+      </p>
+    {% endif %}
+
+    <p class="caption">Printed on {{ today }} &middot; Copy for the parent/pupil.</p>
+
+    <table class="signatures">
+      <tr>
+        <td class="line">Class Teacher's Signature &amp; Date</td>
+        <td class="spacer"></td>
+        <td class="line">Head Teacher's / Principal's Signature &amp; Date</td>
+      </tr>
+    </table>
+    <p class="stamp">This result was generated from the school records and remains valid only with the school's signature and seal.</p>
+  {% else %}
+    <p class="empty">No results have been published for this pupil in this term yet.</p>
+  {% endif %}
+</body>
+</html>

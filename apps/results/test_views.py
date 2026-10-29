@@ -465,3 +465,54 @@ def test_a_report_card_for_a_parent_is_refused(
     login_as(school_a, Role.PARENT)
     url = reverse("results:report_card", args=[pupil.pk, period.pk])
     assert client.get(url).status_code == 403
+
+
+# --- the PDF report card ---
+
+
+def test_the_published_report_card_downloads_as_a_pdf(
+    client, school_a, session, period, primary_three, section_a,
+    maths, pupil, sheet, components, scale, assigned_teacher,
+):
+    client.force_login(assigned_teacher.user)
+    admin = _publish(client, school_a, [pupil], sheet, components)
+    response = admin.get(reverse("results:report_card_pdf", args=[pupil.pk, period.pk]))
+    assert response.status_code == 200
+    assert response["Content-Type"] == "application/pdf"
+    assert response.content.startswith(b"%PDF-")  # a real PDF, not an error page
+    assert ".pdf" in response["Content-Disposition"]
+    assert response["Content-Disposition"].startswith("attachment")
+
+
+def test_the_pdf_report_card_ignores_unpublished_results(
+    client, school_a, session, period, primary_three, section_a,
+    maths, pupil, sheet, components, login_as,
+):
+    login_as(school_a)
+    response = client.get(reverse("results:report_card_pdf", args=[pupil.pk, period.pk]))
+    assert response.status_code == 200
+    assert response.content.startswith(b"%PDF-")
+
+
+def test_the_pdf_report_card_follows_the_same_access_rules(
+    client, school_a, school_b, session, period, primary_three, section_a,
+    maths, pupil, sheet, components, login_as,
+):
+    # a parent is refused
+    login_as(school_a, Role.PARENT)
+    assert client.get(
+        reverse("results:report_card_pdf", args=[pupil.pk, period.pk])
+    ).status_code == 403
+
+    # a pupil from another school is never reached
+    login_as(school_a)
+    level_b = Level.objects.create(school=school_b, name="Primary", order=1)
+    class_b = SchoolClass.objects.create(school=school_b, level=level_b, name="Primary 3", order=3)
+    stranger = Student.objects.create(
+        school=school_b, first_name="Ngozi", last_name="Faraway", sex="female",
+        date_of_birth=date(2018, 4, 4), admission_number="BET/2026/001",
+        current_class=class_b,
+    )
+    assert client.get(
+        reverse("results:report_card_pdf", args=[stranger.pk, period.pk])
+    ).status_code == 404

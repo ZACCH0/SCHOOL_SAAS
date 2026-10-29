@@ -127,5 +127,8 @@ LOGGING = {
         "django.request": {"handlers": ["console"], "level": "WARNING", "propagate": False},
         "django.security": {"handlers": ["console"], "level": "WARNING", "propagate": False},
         "axes": {"handlers": ["console"], "level": "WARNING", "propagate": False},
+        "weasyprint": {"level": "WARNING"},
+        "fontTools": {"level": "WARNING"},
+        "PIL": {"level": "WARNING"},
     },
 }

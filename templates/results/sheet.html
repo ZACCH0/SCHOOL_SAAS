@@ -138,6 +138,8 @@
             {% if sheet.status == 'published' %}
               <a href="{% url 'results:report_card' row.pupil.pk sheet.period.pk %}"
                  class="rounded-lg border border-brand-600 px-3 py-2 text-sm font-semibold text-brand-700 hover:bg-brand-50">Report card</a>
+              <a href="{% url 'results:report_card_pdf' row.pupil.pk sheet.period.pk %}"
+                 class="rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white hover:bg-brand-700">PDF</a>
             {% endif %}
           </div>
         </div>

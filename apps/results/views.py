@@ -3,8 +3,11 @@ from decimal import Decimal
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db.models import Q
+from django.http import HttpResponse
 from django.shortcuts import redirect, render
+from django.template.loader import render_to_string
 from django.utils import timezone
+from django.utils.http import content_disposition_header
 from django.views.decorators.http import require_POST
 
 from apps.academics.models import AcademicPeriod
@@ -258,9 +261,35 @@ def sheet_send_back(request, pk):
 
 @results_access
 def student_report_card(request, student_pk, period_pk):
-    """A pupil's published results for one term. Managers see every pupil; a
-    teacher sees pupils whose class they teach; parents get their own view
-    later."""
+    context = _report_card_context(request, student_pk, period_pk)
+    return render(request, "results/report_card.html", context)
+
+
+@results_access
+def student_report_card_pdf(request, student_pk, period_pk):
+    """The same published results, as a printable A4 PDF report."""
+    context = _report_card_context(request, student_pk, period_pk)
+    html = render_to_string("results/report_card_pdf.html", context, request=request)
+    from weasyprint import HTML  # imported here so a missing GTK library only affects this view
+
+    pdf = HTML(string=html).write_pdf()
+    safe_admission = "".join(
+        ch if ch.isalnum() else "-" for ch in context["pupil"].admission_number
+    )
+    filename = "-".join(
+        ("report-card", safe_admission, context["period"].name.lower().replace(" ", "-"))
+    )
+    response = HttpResponse(pdf, content_type="application/pdf")
+    response["Content-Disposition"] = content_disposition_header(
+        "attachment", f"{filename}.pdf"
+    )
+    return response
+
+
+def _report_card_context(request, student_pk, period_pk):
+    """Fetch the pupil and period with the shared access rules and assemble
+    their published results. Raises Http404 outside the school and
+    PermissionDenied for teachers without an assignment."""
     pupil = get_for_school_or_404(
         Student.objects.for_school(request.school).select_related(
             "current_class", "current_class__level", "current_section",
@@ -303,17 +332,26 @@ def student_report_card(request, student_pk, period_pk):
     subject_rows = []
     percentages = []
     scale_lines = None
+    columns = []  # ordered, unique component names across the pupil's sheets
     for sheet in sheets:
         result = sheet.results.filter(student=pupil).first()
+        score_map = {
+            score.component.name: (score.component.max_score, score.value)
+            for score in
+            sheet.scores.filter(student=pupil).select_related("component")
+        }
         subject_rows.append({
             "sheet": sheet,
             "lines": [
-                (score.component.name, score.component.max_score, score.value)
-                for score in
-                sheet.scores.filter(student=pupil).select_related("component")
+                (name, max_score, value)
+                for name, (max_score, value) in score_map.items()
             ],
+            "score_map": score_map,
             "result": result,
         })
+        for entry in sheet.weights_snapshot or []:
+            if entry["name"] not in columns:
+                columns.append(entry["name"])
         if result:
             percentages.append(result.percentage)
             if not scale_lines and result.scale_snapshot:
@@ -324,14 +362,16 @@ def student_report_card(request, student_pk, period_pk):
         if percentages else None
     )
 
-    return render(
-        request, "results/report_card.html",
-        {
-            "pupil": pupil,
-            "period": period,
-            "subject_rows": subject_rows,
-            "average": average,
-            "scale_lines": scale_lines,
-            "today": timezone.localdate(),
-        },
-    )
+    for row in subject_rows:
+        # cells[i] matches columns[i]: a (max_score, value) pair or None
+        row["cells"] = [row["score_map"].get(name) for name in columns]
+
+    return {
+        "pupil": pupil,
+        "period": period,
+        "subject_rows": subject_rows,
+        "columns": columns,
+        "average": average,
+        "scale_lines": scale_lines,
+        "today": timezone.localdate(),
+    }

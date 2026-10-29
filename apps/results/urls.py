@@ -17,4 +17,8 @@ urlpatterns = [
         "students/<int:student_pk>/report-card/<int:period_pk>/",
         views.student_report_card, name="report_card",
     ),
+    path(
+        "students/<int:student_pk>/report-card/<int:period_pk>/pdf/",
+        views.student_report_card_pdf, name="report_card_pdf",
+    ),
 ]

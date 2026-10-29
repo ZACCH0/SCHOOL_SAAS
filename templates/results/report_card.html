@@ -4,12 +4,15 @@
 
 {% block content %}
   <div class="mx-auto max-w-4xl">
-    <div class="mb-3 flex items-center justify-between print:hidden">
-      <a href="{% url 'results:home' %}" class="rounded-lg border border-line bg-white px-3 py-2 text-sm font-semibold text-brand-700">&larr; All sheets</a>
-      <button onclick="window.print()" class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white">Print</button>
-    </div>
+      <div class="mb-4 flex items-center justify-between print:hidden">
+        <a href="{% url 'results:home' %}" class="rounded-lg border border-line bg-white px-3 py-2 text-sm font-semibold text-brand-700">&larr; All sheets</a>
+        <div class="flex items-center gap-2">
+          <button onclick="window.print()" class="rounded-lg border border-line bg-white px-4 py-2 text-sm font-semibold text-brand-700">Print</button>
+          <a href="{% url 'results:report_card_pdf' pupil.pk period.pk %}" class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white">Download PDF</a>
+        </div>
+      </div>
 
-    <div class="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-line">
+      <div class="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-line">
       <div class="text-center">
         <p class="text-2xl font-bold text-brand-700">{{ pupil.school.name }}</p>
         <p class="text-sm text-muted">
