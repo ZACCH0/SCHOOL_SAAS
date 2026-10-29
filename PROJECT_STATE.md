@@ -48,6 +48,10 @@ Statuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 
 ## Task log (newest first)
 
+### Fix: submit_sheet crashed on the live flow (2026-10-29, 327 passed)
+- Owner found the bug in the browser: `ValueError: Cannot assign "5": "SubjectResult.student" must be a "Student" instance`. `submit_sheet` looped `values_list("student", flat=True)` and fed the raw integer into `_recompute_student`, which assigns it to the `SubjectResult.student` FK
+- Fix: fetch `Student.objects.for_school(sheet.school).filter(pk__in=student_ids)` and recompute per instance (`apps/results/services.py`); caught late because all service tests happened to pre-create results through `save_score` — new test `test_submit_grades_pupils_whose_scores_were_created_directly` reproduces the bare `Score.objects.create` path (percentage 75.0, grade A)
+
 ### T12c Results pages (2026-10-29, 326 passed)
 - New `apps/results/urls.py` (namespace `results`), `apps/results/views.py`, `templates/results/home.html`, `sheet.html`, `report_card.html`; nav entry "Results" (owner/admin/teacher) in `apps/core/navigation.py`; `config/urls.py` adds `results/`
 - Home: term picker reuses new `apps/academics/selectors.py` helpers `session_periods` + `current_or_last_period` (previously duplicated inside fees views — fees can switch to them later); teacher listing uses the same assignment rule as `ensure_can_edit_scores` (class-wide assignment also shows section sheets)

@@ -16,6 +16,7 @@ from apps.results.models import (
 from apps.schools.models import Membership
 from apps.schools.permissions import MANAGE_STRUCTURE_ROLES, require_role
 from apps.schools.service_helpers import ensure_owned, save_or_explain
+from apps.students.models import Student
 from apps.subjects.models import TeacherAssignment
 
 SCORE_ROLES = MANAGE_STRUCTURE_ROLES + (Membership.Role.TEACHER,)
@@ -207,7 +208,8 @@ def submit_sheet(request, sheet):
         )
 
     scale = _active_scale(sheet.period.session)
-    for student in sheet.scores.values_list("student", flat=True).distinct():
+    student_ids = set(sheet.scores.values_list("student", flat=True))
+    for student in Student.objects.for_school(sheet.school).filter(pk__in=student_ids):
         _recompute_student(sheet, student, scale)
 
     sheet.weights_snapshot = [

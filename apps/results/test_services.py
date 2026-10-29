@@ -301,6 +301,22 @@ def test_submit_refuses_an_empty_sheet(sheet, components, assigned_teacher, make
     assert "at least one score" in str(info.value)
 
 
+def test_submit_grades_pupils_whose_scores_were_created_directly(
+    school_a, sheet, pupil, components, scale, assigned_teacher, make_request
+):
+    for component, value in zip(components, ("12", "15", "48")):
+        Score.objects.create(
+            school=school_a, sheet=sheet, student=pupil,
+            component=component, value=Decimal(value),
+        )
+    submitted = submit_sheet(
+        make_request(school_a, Role.TEACHER, member=assigned_teacher), sheet
+    )
+    result = SubjectResult.objects.get(sheet=sheet, student=pupil)
+    assert submitted.status == ResultSheet.Status.SUBMITTED
+    assert result.percentage == Decimal("75.0") and result.grade == "A"
+
+
 def test_submit_refuses_an_incomplete_pupil(
     school_a, sheet, pupil, pupil_two, components, scale, assigned_teacher, make_request
 ):
