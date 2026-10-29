@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     "apps.attendance",
     "apps.fees",
     "apps.results",
+    "apps.notifications",
 
 
 ]
@@ -59,6 +60,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "apps.core.context_processors.shell",
+                "apps.core.context_processors.unread_notifications",
             ],
         },
     },

@@ -29,6 +29,7 @@ from .services import (
     save_score,
     send_back,
     submit_sheet,
+    teaching_assignments_for_sheet,
 )
 
 Role = Membership.Role
@@ -43,15 +44,13 @@ def _text(exc):
     return " ".join(exc.messages)
 
 
-def _teacher_sees_sheet(request, session, sheet):
+def _teacher_sees_sheet(request, sheet):
     """A teacher sees a sheet when they teach its subject to its class this
-    session; a class-wide assignment also covers a section sheet."""
-    return TeacherAssignment.objects.for_school(request.school).filter(
+    session: same rule as score entry, including the section vs class-wide
+    distinction."""
+    return teaching_assignments_for_sheet(sheet).filter(
         teacher=request.membership,
-        session=session,
-        school_class=sheet.school_class,
-        subject=sheet.subject,
-    ).filter(Q(section__isnull=True) | Q(section=sheet.section)).exists()
+    ).exists()
 
 
 @results_access
@@ -75,7 +74,7 @@ def results_home(request):
         .order_by("school_class__order", "section__name", "subject__name")
     )
     if not is_manager:
-        sheets = [s for s in sheets if _teacher_sees_sheet(request, session, s)]
+        sheets = [s for s in sheets if _teacher_sees_sheet(request, s)]
     for sheet in sheets:
         sheet.pupil_count = len(
             set(sheet.scores.values_list("student_id", flat=True))

@@ -18,6 +18,7 @@ FEES_ROLES = [Role.OWNER, Role.ADMIN, Role.BURSAR]
 # Add one line here when a module's page exists.
 NAV_ITEMS = [
     ("Dashboard", "core:dashboard", None),
+    ("Notifications", "notifications:list", None),
     ("Attendance", "attendance:home", ATTENDANCE_ROLES),
     ("Results", "results:home", RESULTS_ROLES),
     ("Students", "students:list", MANAGERS),

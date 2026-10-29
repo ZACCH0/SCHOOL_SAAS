@@ -41,3 +41,17 @@ class RoleRequiredMixin:
         if membership is None or membership.role not in self.allowed_roles:
             raise PermissionDenied
         return super().dispatch(request, *args, **kwargs)
+
+
+def membership_required(view):
+    """Any active member of a school may open this, whatever their role."""
+
+    @wraps(view)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return redirect_to_login(request.get_full_path())
+        if getattr(request, "membership", None) is None:
+            raise PermissionDenied
+        return view(request, *args, **kwargs)
+
+    return wrapper

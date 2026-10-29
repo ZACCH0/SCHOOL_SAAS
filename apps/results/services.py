@@ -5,6 +5,7 @@ from django.db.models import Q
 from django.db import transaction
 
 from apps.audit.services import record
+from apps.notifications.services import notify_memberships
 from apps.results.models import (
     AssessmentComponent,
     GradeBoundary,
@@ -33,6 +34,20 @@ def _decimal(value, message):
         raise ValidationError(message) from exc
 
 
+def teaching_assignments_for_sheet(sheet):
+    """The teacher assignments that allow scoring this sheet this session.
+    For a section sheet, a class-wide assignment on the same class covers it."""
+    scope = (
+        Q(section__isnull=True) | Q(section=sheet.section)
+        if sheet.section_id else Q(section__isnull=True)
+    )
+    return TeacherAssignment.objects.for_school(sheet.school).filter(
+        session=sheet.period.session,
+        school_class=sheet.school_class,
+        subject=sheet.subject,
+    ).filter(scope)
+
+
 def ensure_can_edit_scores(request, sheet):
     """Owner/admin may score any sheet. A teacher only the subject they are
     assigned to this session for the sheet's class (or exact section)."""
@@ -43,18 +58,7 @@ def ensure_can_edit_scores(request, sheet):
         return
     if membership.role != Membership.Role.TEACHER:
         raise PermissionDenied
-    scope = (
-        Q(section__isnull=True) | Q(section=sheet.section)
-        if sheet.section_id
-        else Q(section__isnull=True)
-    )
-    assigned = TeacherAssignment.objects.for_school(request.school).filter(
-        teacher=membership,
-        session=sheet.period.session,
-        school_class=sheet.school_class,
-        subject=sheet.subject,
-    ).filter(scope).exists()
-    if not assigned:
+    if not teaching_assignments_for_sheet(sheet).filter(teacher=membership).exists():
         raise PermissionDenied(
             "Only the subject teacher of this class or section can enter scores for it."
         )
@@ -297,6 +301,9 @@ def send_back(request, sheet):
             "Only a submitted or reviewed sheet can be sent back."
         )
     previous = sheet.status
+    recipients = [a.teacher for a in teaching_assignments_for_sheet(sheet)]
+    if sheet.submitted_by:
+        recipients.append(sheet.submitted_by)
     sheet.status = ResultSheet.Status.DRAFT
     sheet.submitted_by = None
     sheet.weights_snapshot = None
@@ -309,5 +316,18 @@ def send_back(request, sheet):
         request, "results.sheet_sent_back", target=sheet,
         subject=sheet.subject.name, previous=previous,
         for_class=sheet.section.name if sheet.section_id else sheet.school_class.name,
+    )
+    notify_memberships(
+        request, recipients,
+        kind="results.sheet_sent_back",
+        title=(
+            f"{sheet.subject.name} result sent back "
+            f"({sheet.section.name if sheet.section_id else sheet.school_class.name})"
+        ),
+        body=(
+            "The school office returned this result sheet for correction. "
+            "Open it and update the scores, then submit it again."
+        ),
+        url=f"/results/sheets/{sheet.pk}/",
     )
     return sheet

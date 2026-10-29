@@ -12,3 +12,11 @@ def shell(request):
         .first()
     )
     return {"nav_items": nav_for(request, membership), "current_period": period}
+
+
+def unread_notifications(request):
+    """A lightweight read for the bell in the top bar."""
+    if getattr(request, "membership", None) is None:
+        return {}
+    from apps.notifications.services import unread_count
+    return {"unread_notifications": unread_count(request)}

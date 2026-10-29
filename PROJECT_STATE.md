@@ -3,9 +3,9 @@
 Single source of truth for where the project stands. Rules for updating it are in `AGENTS.md` section 9.
 
 **Last updated:** 2026-10-29
-**Current phase:** T12 Results — T12a verified, T12b DONE (unverified), T12c pages DONE (unverified), T12d PDF next
-**Current task:** T12c pages built: `/results/` home (term picker; stat cards for draft + awaiting publication + published; managers see all sheets, teachers only sheets whose subject they are assigned this session — a class-wide assignment covers section sheets), `/results/sheets/<pk>/` sheet page (per-pupil score row form on DRAFT sheets only; read-only shows values; submitted-or-later sheets display the weights captured at submission, not live config; result percentage + grade per pupil), POST `score/` saves a whole row via `save_score` per component with friendly per-component error messages, POST `submit/review/approve/publish/send-back/` drive the workflow (submit for assignee, rest manager-only via the decorator first), and `/results/students/<pk>/report-card/<period-pk>/` printable HTML report card (published sheets only; owner/admin any pupil, a teacher only pupils whose class they teach, parent/bursar refused — parent portal comes later). Nav "Results" for owner/admin/teacher. 21 page tests; 326 total passed.
-**Next task:** Owner verifies T12c in the browser (enter scores as admin and as an assigned teacher, submit, review, approve, publish, open a report card on published Real data: 11 seeded draft sheets + Mathematics scores for Primary 1 A exist). Then T12d PDF report cards with WeasyPrint (install WeasyPrint, add `/results/.../pdf/`, base template for print).
+**Current phase:** T12 Results — T12a verified, T12b DONE (unverified), T12c DONE (unverified, + send-back notifications), T12d PDF next
+**Current task:** T12c extended: when a manager sends a sheet back, the app now creates a Notification for the assigned subject teacher and the previous submitter (actor excluded), with title "Subject result sent back (Class/Section)", body and a link to the sheet. New `apps/notifications` (model, `notify_memberships`, bell with unread badge in base.html, `/notifications/` list with mark one/all read). Teacher-assignment scope refactored into `teaching_assignments_for_sheet` shared by score entry, home listing, and send-back recipients. 339 tests passed.
+**Next task:** Owner verifies T12c in the browser (enter scores, submit, review, approve, publish, report card; then send a submitted sheet back and check the teacher's bell shows the notification). Then T12d PDF report cards with WeasyPrint.
 
 ## Task board
 
@@ -47,6 +47,16 @@ Statuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 | T21 | School public home page with gallery, news, admissions; own subdomain per school | TODO | Build after T9 to T13 |
 
 ## Task log (newest first)
+
+### Send-back notification + notifications foundation (2026-10-29, 339 passed)
+- New app `apps/notifications`: `Notification` (ValidatedSchoolModel: recipient Membership, kind `<area>.<verb>` like audit, title, body, optional url, is_read, index on school+recipient+is_read); migration `notifications.0001` applied
+- `services.py`: `notify_memberships(request, recipients, kind, title, body, url)` — deduplicates, skips the actor, refuses memberships of another school; `unread_count(request)` for the bell
+- Hooked into `apps/results/services.py` `send_back`: on the same transaction the assigned subject teacher(s) (via the new shared `teaching_assignments_for_sheet(sheet)` helper) plus the sheet's previous submitter are notified — "Mathematics result sent back (Primary 3 A)" with body + link to the sheet. The actor (admin) never receives their own back-action
+- `ensure_can_edit_scores` refactored onto the same helper so score-entry scope, results-home teacher listing and send-back recipients use ONE rule (no more triple-duplicated Q logic)
+- Views: `/notifications/` list (own notes only, 50 latest, mark one read / mark all read), added `membership_required` decorator in `apps/schools/permissions.py` (any role); context processor `unread_notifications` for the top bar
+- Templates: bell button with red unread badge next to Log out in `base.html`; `templates/notifications/list.html` (New/Read chips, Open link to the sheet, print-safe reuse of shared components); nav item "Notifications" for every role
+- Tests: apps/notifications/test_services.py (4: actor skipped, dedup, cross-school skipped, count per membership), test_views.py (6: login, own-only, badge clears, cannot mark another member's, mark all, foreign id no crash); results test_services.py +2 (send_back notifies the assigned teacher with title/url/not the admin; a non-teacher submitter also receives one)
+- No results-model changes; the email/push/SMS channel stays FUTURE (today it is the in-app bell only)
 
 ### Fix: submit_sheet crashed on the live flow (2026-10-29, 327 passed)
 - Owner found the bug in the browser: `ValueError: Cannot assign "5": "SubjectResult.student" must be a "Student" instance`. `submit_sheet` looped `values_list("student", flat=True)` and fed the raw integer into `_recompute_student`, which assigns it to the `SubjectResult.student` FK

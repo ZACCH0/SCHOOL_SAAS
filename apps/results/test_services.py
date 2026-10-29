@@ -7,6 +7,7 @@ from apps.academics.models import AcademicPeriod, AcademicSession
 from apps.audit.models import AuditLog
 from apps.classes.models import Level, SchoolClass, Section
 from apps.classes.models import ClassTeacher
+from apps.notifications.models import Notification
 from apps.schools.models import Membership
 from apps.students.models import Student
 from apps.subjects.models import ClassSubject, Subject, TeacherAssignment
@@ -399,6 +400,40 @@ def test_send_back_returns_to_draft_and_clears_the_submitter(
     assert sheet.status == ResultSheet.Status.DRAFT
     assert sheet.submitted_by is None and sheet.weights_snapshot is None
     assert AuditLog.objects.filter(action="results.sheet_sent_back").exists()
+
+
+def test_send_back_notifies_the_assigned_teacher_not_the_admin(
+    school_a, sheet, pupil, components, scale, assigned_teacher, make_request
+):
+    request = make_request(school_a, Role.TEACHER, member=assigned_teacher)
+    for component, value in zip(components, (12, 15, 48)):
+        save_score(request, sheet, pupil, component, value)
+    admin_mem = make_request(school_a, Role.ADMIN)
+    submit_sheet(request, sheet)
+    send_back(admin_mem, sheet)
+
+    notes = Notification.objects.all()
+    subjects = sorted(n.recipient_id for n in notes)
+    assert subjects == [assigned_teacher.pk]  # only the sheet's teacher
+    note = notes.get()
+    assert note.kind == "results.sheet_sent_back"
+    assert "Mathematics" in note.title
+    assert note.url == f"/results/sheets/{sheet.pk}/"
+    assert note.is_read is False
+
+
+def test_send_back_also_notifies_a_non_teacher_submitter(
+    school_a, sheet, pupil, components, scale, assigned_teacher, make_member, make_request
+):
+    owner = make_member(school_a, role=Role.OWNER)
+    request = make_request(school_a, Role.OWNER, member=owner)
+    for component, value in zip(components, (12, 15, 48)):
+        save_score(request, sheet, pupil, component, value)
+    submit_sheet(request, sheet)
+    send_back(make_request(school_a, Role.ADMIN), sheet)
+
+    recipients = {n.recipient_id for n in Notification.objects.all()}
+    assert owner.pk in recipients and assigned_teacher.pk in recipients
 
 
 def test_an_approved_sheet_cannot_be_sent_back(
