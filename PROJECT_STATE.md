@@ -2,10 +2,10 @@
 
 Single source of truth for where the project stands. Rules for updating it are in `AGENTS.md` section 9.
 
-**Last updated:** 2026-10-29 (T12 closed)
-**Current phase:** T12 Results CLOSED (owner verified). Next: pick T14 dashboards/timetable, parent portal (parents currently 403 on results), or remaining gaps (T7e login by phone/email, T7d admin password reset, T11 admissions, T20 photos)
-**Current task:** T12 closed out after the owner's final check ("cool"): published rows link to the report card only (PDF button removed from sheet rows, commit `80a01cc`); REQUIREMENTS items 5 (except ranking), 6, 7 ticked; T12 board row DONE (verified).
-**Next task:** OWNER CHOOSE the next module: T14 dashboards/announcements/timetable, the parent portal (let parents see their children's results/fees — smallest sensible step), T7e login by phone or email, T7d admin password reset, T11 admissions, or T20 profile photos.
+**Last updated:** 2026-10-29 (parent portal P1-P3 built, owner verified steps 1-2 in browser)
+**Current phase:** Parent portal (`apps/portal`) steps 1-3 built: My children page (owner verified), child page (owner verified), report card access for parents (unverified). Plus office-side parent account creation (owner verified). 376 tests passing.
+**Current task:** Parent portal step 3: parents open/download the report card (`report_access` + GuardianLink rule in `apps/results/views.py`, links from the child page). NOT yet tested by the owner in the browser.
+**Next task:** Owner browser-test step 3 (log in parent1 → child page → Open full report card / Download PDF). Then choose: T14 dashboards/announcements/timetable, T7e login by phone/email, T7d admin password reset, T11 admissions, or T20 photos.
 
 ## Task board
 
@@ -45,8 +45,21 @@ Statuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 | T19 | UI: apply brand palette and app shell to real templates (phases U0 to U2) | DONE (verified) | U0, U1 (58 passed), U2 (68 passed). Real pages are built by the owner with OpenCode from the design canvas |
 | T20 | Profile photos for students, teachers, parents (needs Pillow and file storage) | TODO | |
 | T21 | School public home page with gallery, news, admissions; own subdomain per school | TODO | Build after T9 to T13 |
+| P1 | Parent portal step 1: My children page (parents only, own-school links) | DONE (verified by owner 2026-10-29) | apps/portal; 8+ tests; 353 passed |
+| P1b | Office creates parent accounts (Parents list + Add parent, audited) | DONE (verified by owner 2026-10-29) | apps/students:parent_list/create; owner registered parent1 flow |
+| P2 | Parent portal step 2: child page (published results + fee balances, read-only) | DONE (verified by owner 2026-10-29) | 16 portal tests; 372 passed |
+| P3 | Parent portal step 3: report card HTML + PDF for linked parents | DONE (unverified) | report_access + GuardianLink rule; 20 portal tests; 376 passed |
 
 ## Task log (newest first)
+
+### Parent portal P1-P3 + office parent accounts (2026-10-29, 376 passed)
+- Owner chose the parent portal first, built in steps with owner browser-testing after each step ("after each i will test it")
+- **P1 `apps/portal`** (commit "feat: parent portal step 1"): `/portal/` children page, `role_required(PARENT)`; children come from GuardianLink of the ACTIVE membership only (`children_for` selector); nav "My children" for parents only. Owner verified live. Demo parent seeded for testing: username `parent1` / password `Parent@1`, linked to Aishat Adekunle FSS/2026/003
+- **P1b office parent accounts** (owner verified): Parents list (`students:parent_list`, search + child count) and Add parent account (`students:parent_create` → `create_parent` service: role-guarded, username uniqueness case-insensitive, password validated, audit `parent.account_created`, creates Membership with Parent role); children are then linked via the existing student detail "Add guardian". Owner registered a parent + link by themselves
+- **P2 child page** (owner verified): `/portal/children/<pk>/` — read-only: class card, average of published subject percentages, fees owed card (amber when > 0), published-results table (per subject total/%/grade from PUBLISHED sheets via new `published_subject_results(school, pupil, period)` selector in `apps/results/services.py` — reused read source for report card and portal), fees table reusing the fees module's exact subquery totals (item_total/paid_total/balance_due → same numbers as bursar sees); no payment recording for parents
+- **P3 report card for parents** (NOT yet verified): `student_report_card(_pdf)` now `@report_access` = SCORE_ROLES + PARENT; `_report_card_context` allows PARENT only with a GuardianLink for that pupil in the active school (else 403); teachers keep the assignment rule, managers pass, bursar 403. Child page gains "Open full report card" + "Download PDF" buttons (current period)
+- Tests: apps/portal (20), 11 new in apps/students/test_parent_management.py. Tenant isolation: another parent's child 403, foreign-school child 404, two-schools-one-user leak test, parents-only report card rule
+- Known leftover: all existing results tests still pass (the old report-card "parent 403" test parent has no GuardianLink, so it remains 403)
 
 ### T12d: PDF report cards with WeasyPrint (2026-10-29, 345 passed)
 - Owner asked the PDF to "print the result area only, look like a real standard result". Setup: `weasyprint==70.0` pinned in `requirements/base.txt`; the Windows GTK runtime (needed by pango) was installed once and its bin folder appended to the user PATH — app code stays portable (CI/Render just install libpango via the updated `.github/workflows/tests.yml`)
@@ -372,6 +385,7 @@ SCHOOL_SAAS/
     accounts/   custom User, login urls
     schools/    School, Membership, SchoolOwnedModel, middleware, permissions, selectors, choose-school view
     academics/  AcademicSession, AcademicPeriod
+    portal/     parent portal (My children, child page)
     core/       home, dashboard
   templates/    base.html, accounts/, schools/, core/
   static/       src/input.css, css/output.css

@@ -18,7 +18,7 @@ Types: **REQ** = product requirement, **TECH** = implementation rule, **FUTURE**
 - [ ] School Admin
 - [ ] Teacher (only authorized classes/subjects)
 - [ ] Bursar/Accountant (finance access only)
-- [ ] Parent/Guardian (one account, multiple children, own children only)
+- [ ] Parent/Guardian (one account, multiple children, own children only) *(portal built 2026-10-29: office creates parent accounts; "My children" page; child page with published results + fee balances; report card HTML + PDF; role-guarded, own-school only — mostly unverified in browser)*
 - [ ] Student (own records only)
 
 ## 3. Foundation (current phase)
