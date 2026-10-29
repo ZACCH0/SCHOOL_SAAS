@@ -2,10 +2,10 @@
 
 Single source of truth for where the project stands. Rules for updating it are in `AGENTS.md` section 9.
 
-**Last updated:** 2026-10-29 (after T12d PDF)
-**Current phase:** T12 Results — T12c workflow-page verification still partly open, T12d PDF DONE (unverified)
-**Current task:** T12d PDF report cards shipped (commit `0f3d848`): WeasyPrint 70.0 pinned in `requirements/base.txt`; GTK runtime installed on the owner's PC (one-time, `C:\Program Files\GTK3-Runtime Win64\bin` added to user PATH); `/results/students/<pk>/report-card/<pk>/pdf/` streams a real A4 PDF of PUBLISHED results only, same access rules as the HTML card; shared `_report_card_context` builder feeding both HTML and PDF; Download-PDF button on the report card page + PDF button on published sheet rows; WeasyPrint/fontTools loggers silenced in settings; CI installs libpango. Suite: 345 passed; `check` + `makemigrations --check` clean; CSS rebuilt. Sample generated from dev data: `C:\Users\DELL-7~1\AppData\Local\Temp\opencode\report-card-sample.pdf`.
-**Next task:** OWNER VERIFY the PDF in the browser: open a published report card and click "Download PDF" (check A4 layout, school header, pupil details, component columns, total/%/grade/remark, average, grading key, signature lines). Then close out T12 (tick REQUIREMENTS.md item 5 once results are verified) and start T14 dashboards/timetable or the parent portal. Note: owners/admins should start new VS Code terminals so the GTK PATH entry loads.
+**Last updated:** 2026-10-29 (T12 closed)
+**Current phase:** T12 Results CLOSED (owner verified). Next: pick T14 dashboards/timetable, parent portal (parents currently 403 on results), or remaining gaps (T7e login by phone/email, T7d admin password reset, T11 admissions, T20 photos)
+**Current task:** T12 closed out after the owner's final check ("cool"): published rows link to the report card only (PDF button removed from sheet rows, commit `80a01cc`); REQUIREMENTS items 5 (except ranking), 6, 7 ticked; T12 board row DONE (verified).
+**Next task:** OWNER CHOOSE the next module: T14 dashboards/announcements/timetable, the parent portal (let parents see their children's results/fees — smallest sensible step), T7e login by phone or email, T7d admin password reset, T11 admissions, or T20 profile photos.
 
 ## Task board
 
@@ -28,7 +28,7 @@ Statuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 | T9 | Students and parents (parent with many children, history across promotions) | DONE (verified by owner) | T9a data model, T9b services, T9c pages. 199 tests passed; owner consulted on admission numbers: manual entry stays, no auto-numbering for now |
 | T10 | Attendance | DONE (unverified by owner in browser) | T10a model, T10b services, T10c pages. 227 tests passed on 2026-10-26; tenant isolation, role matrix, audit and read-only history covered |
 | T11 | Admissions | TODO | |
-| T12 | Assessments, results, grading, workflow, report cards (PDF) | IN PROGRESS | T12a models DONE (verified by owner 2026-10-28). T12b services DONE (unverified). T12c pages: owner verified the workflow NOTIFICATIONS live (send-back earlier, submit/review/approve/publish 2026-10-29); rest of T12c still unverified. T12d PDF DONE (unverified) commit 0f3d848; 345 total passed |
+| T12 | Assessments, results, grading, workflow, report cards (PDF) | DONE (verified) | T12a verified 2026-10-28; T12b/c workflow + notifications verified in browser (send-back earlier, submit/review/approve/publish 2026-10-29); T12d PDF verified ("cool"). 345 tests passed. Ranking (per-school toggle) intentionally deferred |
 | T13 | Finance: fee structures, invoices, payments, receipts, balances | DONE (unverified by owner in browser) | T13a model, T13b services, T13c pages. 257 tests passed on 2026-10-26; idempotent payments, no overpay, audit, tenant isolation |
 | T14 | Dashboards, announcements, notifications, timetable | TODO | |
 | T15 | Documents, analytics, audit log | TODO | |
