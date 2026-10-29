@@ -1,4 +1,7 @@
 from django import forms
+from django.contrib.auth import password_validation
+from django.contrib.auth import get_user_model
+from django.core.validators import RegexValidator
 
 from apps.classes.models import SchoolClass, Section
 from apps.schools.models import Membership
@@ -70,3 +73,36 @@ class GuardianForm(forms.Form):
             .select_related("user")
             .exclude(guardian_links__student=student)
         )
+
+
+VALID_USERNAME_RE = r"^[\w.+-]+$"
+
+
+class ParentForm(forms.Form):
+    """The office creates a NEW parent account, then links children to it."""
+
+    username = forms.CharField(
+        max_length=150,
+        validators=[RegexValidator(VALID_USERNAME_RE, "Letters, numbers and . _ + - only.")],
+    )
+    password = forms.CharField(widget=forms.PasswordInput)
+    first_name = forms.CharField(max_length=100, label="First name")
+    last_name = forms.CharField(max_length=100, label="Last name")
+    email = forms.EmailField(
+        required=False, help_text="Optional. Needed for password self-reset."
+    )
+    phone = forms.CharField(
+        max_length=20, required=False, help_text="Optional."
+    )
+
+    def clean_username(self):
+        username = self.cleaned_data["username"].strip()
+        User = get_user_model()
+        if User.objects.filter(username__iexact=username).exists():
+            raise forms.ValidationError("That username is already taken.")
+        return username
+
+    def clean_password(self):
+        password = self.cleaned_data["password"]
+        password_validation.validate_password(password)
+        return password

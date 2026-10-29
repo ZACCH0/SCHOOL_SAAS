@@ -1,3 +1,4 @@
+from django.contrib.auth import get_user_model, password_validation
 from django.core.exceptions import ValidationError
 from django.db import transaction
 
@@ -7,6 +8,7 @@ from apps.schools.permissions import MANAGE_STRUCTURE_ROLES, require_role
 from apps.schools.service_helpers import ensure_owned, save_or_explain
 
 from .models import GuardianLink, Student, StudentClassHistory
+from apps.schools.models import Membership
 
 
 def _clean_str(value):
@@ -14,6 +16,47 @@ def _clean_str(value):
     if not value:
         raise ValidationError("A name is required.")
     return value
+
+
+def _clean_username(value):
+    import re
+
+    value = (value or "").strip()
+    if not re.match(r"^[\w.+-]+$", value):
+        raise ValidationError("Letters, numbers and . _ + - only.")
+    if get_user_model().objects.filter(username__iexact=value).exists():
+        raise ValidationError("That username is already taken.")
+    return value
+
+
+@transaction.atomic
+def create_parent(
+    request, *, username, password, first_name, last_name, email="", phone="",
+):
+    """The office creates a parent account so children can be linked to it."""
+    require_role(request, MANAGE_STRUCTURE_ROLES)
+    username = _clean_username(username)
+    first_name = _clean_str(first_name)
+    last_name = _clean_str(last_name)
+    password_validation.validate_password(password)
+    User = get_user_model()
+    user = User.objects.create_user(
+        username,
+        password=password,
+        first_name=first_name,
+        last_name=last_name,
+        email=email or "",
+    )
+    user.phone = (phone or "").strip()
+    user.save(update_fields=["phone"])
+    membership = Membership.objects.create(
+        school=request.school, user=user, role=Membership.Role.PARENT
+    )
+    record(
+        request, "parent.account_created", target=membership,
+        username=user.get_username(),
+    )
+    return membership
 
 
 def _upsert_history(request, student, session=None):

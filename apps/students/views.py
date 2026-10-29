@@ -2,7 +2,7 @@ from django import forms as dj_forms
 from django.contrib import messages
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.core.exceptions import ValidationError
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
@@ -10,12 +10,13 @@ from django.views.decorators.http import require_POST
 from apps.classes.models import SchoolClass, Section
 from apps.academics.models import AcademicSession
 from apps.schools.lookups import get_for_school_or_404
+from apps.schools.models import Membership
 from apps.schools.permissions import MANAGE_STRUCTURE_ROLES, role_required
 
-from .forms import GuardianForm, StudentDetailForm, StudentForm
+from .forms import GuardianForm, ParentForm, StudentDetailForm, StudentForm
 from .models import GuardianLink, Student
 from .services import (
-    add_guardian, create_student, move_student, remove_guardian,
+    add_guardian, create_parent, create_student, move_student, remove_guardian,
     set_student_status, update_student,
 )
 
@@ -261,3 +262,58 @@ def guardian_remove(request, pk, link_pk):
     remove_guardian(request, link)
     messages.success(request, "Guardian unlinked.")
     return redirect("students:detail", pk=student.pk)
+
+
+@manager_only
+def parent_list(request):
+    query = (request.GET.get("q") or "").strip()
+    filters = Q()
+    if query:
+        filters &= (
+            Q(user__username__icontains=query)
+            | Q(user__first_name__icontains=query)
+            | Q(user__last_name__icontains=query)
+            | Q(user__phone__icontains=query)
+        )
+    parents = (
+        Membership.objects.filter(school=request.school, role=Membership.Role.PARENT)
+        .select_related("user")
+        .annotate(child_count=Count("guardian_links"))
+        .filter(filters)
+        .order_by("user__last_name", "user__first_name", "user__username")
+    )
+    return render(
+        request, "students/parent_list.html",
+        {"parents": parents, "query": query},
+    )
+
+
+@manager_only
+def parent_create(request):
+    form = ParentForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        data = form.cleaned_data
+        try:
+            membership = create_parent(
+                request, username=data["username"], password=data["password"],
+                first_name=data["first_name"], last_name=data["last_name"],
+                email=data["email"], phone=data["phone"],
+            )
+        except ValidationError as exc:
+            form.add_error(None, exc)
+        else:
+            user = membership.user
+            messages.success(
+                request,
+                f"Parent account for {user.get_full_name()} ({user.get_username()}) was created. "
+                "Share the password privately and link children on their pages.",
+            )
+            return redirect("students:parent_list")
+    return render(
+        request, "form_page.html",
+        {
+            "form": form,
+            "title": "Add parent account",
+            "cancel_url": reverse("students:parent_list"),
+        },
+    )

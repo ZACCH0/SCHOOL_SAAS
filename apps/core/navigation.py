@@ -25,6 +25,7 @@ NAV_ITEMS = [
     ("Attendance", "attendance:home", ATTENDANCE_ROLES),
     ("Results", "results:home", RESULTS_ROLES),
     ("Students", "students:list", MANAGERS),
+    ("Parents", "students:parent_list", MANAGERS),
     ("Classes", "classes:list", MANAGERS),
     ("Subjects", "subjects:list", MANAGERS),
     ("Fees", "fees:home", FEES_ROLES),
