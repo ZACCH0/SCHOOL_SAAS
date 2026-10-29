@@ -2,10 +2,10 @@
 
 Single source of truth for where the project stands. Rules for updating it are in `AGENTS.md` section 9.
 
-**Last updated:** 2026-10-29 (parent portal P1-P3 built, owner verified steps 1-2 in browser)
-**Current phase:** Parent portal (`apps/portal`) steps 1-3 built: My children page (owner verified), child page (owner verified), report card access for parents (unverified). Plus office-side parent account creation (owner verified). 376 tests passing.
-**Current task:** Parent portal step 3: parents open/download the report card (`report_access` + GuardianLink rule in `apps/results/views.py`, links from the child page). NOT yet tested by the owner in the browser.
-**Next task:** Owner browser-test step 3 (log in parent1 → child page → Open full report card / Download PDF). Then choose: T14 dashboards/announcements/timetable, T7e login by phone/email, T7d admin password reset, T11 admissions, or T20 photos.
+**Last updated:** 2026-10-30 (parent portal CLOSED; all work pushed to GitHub `a9ca2f3`)
+**Current phase:** Parent portal P1–P3 COMPLETE and owner-tested: My children page, office parent accounts, child page (results + fees), report card HTML + PDF for parents, PDF signature labels enlarged after owner feedback. Grade-column template bug found live and fixed. 376 tests passing; everything pushed.
+**Current task:** Session ended here. Resume fresh next time.
+**Next task:** OWNER CHOOSE: T14 dashboards/announcements/timetable · T7e login by phone/email · T7d admin password reset (no-email users) · T11 admissions · T20 profile photos. Dev data note: 72 placeholder pupils, all 11 Primary 1 A subjects published (real workflow), Primary 3 drafts untouched; parent1/Parent@1 linked to Esther (FSS/2026/001, has results) and Aishat (FSS/2026/003, no results yet by design).
 
 ## Task board
 
@@ -48,9 +48,19 @@ Statuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 | P1 | Parent portal step 1: My children page (parents only, own-school links) | DONE (verified by owner 2026-10-29) | apps/portal; 8+ tests; 353 passed |
 | P1b | Office creates parent accounts (Parents list + Add parent, audited) | DONE (verified by owner 2026-10-29) | apps/students:parent_list/create; owner registered parent1 flow |
 | P2 | Parent portal step 2: child page (published results + fee balances, read-only) | DONE (verified by owner 2026-10-29) | 16 portal tests; 372 passed |
-| P3 | Parent portal step 3: report card HTML + PDF for linked parents | DONE (unverified) | report_access + GuardianLink rule; 20 portal tests; 376 passed |
+| P3 | Parent portal step 3: report card HTML + PDF for linked parents | DONE (verified) | Owner opened/downloaded the PDF from the portal; label size fixed on their feedback. 20 portal tests; 376 passed |
 
 ## Task log (newest first)
+
+### Session close (2026-10-30) — parent portal closed, everything pushed
+- Owner tested the whole portal live: parent1 dashboard → My children → child page (results with grades, fees balances) → Open full report card → Download PDF
+- Owner feedback fixed two bugs on the spot:
+  - child page grade column was blank (template used `grade_label`, field is `grade`) — regression test added (`aa76966`)
+  - PDF signature labels too small — now 11.5pt bold with signature space (`a9ca2f3`)
+- Dev data: all 11 Primary 1 A result sheets published through the real workflow via a seed script (per-subject teacher assignments had to be reused/created; primary-3 sheets left in draft on purpose). parent1 also linked to Esther FSS/2026/001 (has results). Seed data stays "active" (non-generic teachers existed); per-subject TeacherAssignment assign reuse; other classes untouched
+- Commits this session: `58ebb6a` P1 My children · `fca9ab4` office parent accounts · `5f897d0` P2 child page · `3bc3ca4` P3 report card access · `4b71daa` docs · `aa76966` grade fix · `a9ca2f3` PDF labels — all pushed to GitHub (`c244484..a9ca2f3`)
+- Test suite: 376 passed; `check` and `makemigrations --check` clean
+- NEXT: pick T14 / T7e / T7d / T11 / T20 (details in "Next task" above)
 
 ### Parent portal P1-P3 + office parent accounts (2026-10-29, 376 passed)
 - Owner chose the parent portal first, built in steps with owner browser-testing after each step ("after each i will test it")
