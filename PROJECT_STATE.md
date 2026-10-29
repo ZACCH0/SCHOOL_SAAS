@@ -2,10 +2,10 @@
 
 Single source of truth for where the project stands. Rules for updating it are in `AGENTS.md` section 9.
 
-**Last updated:** 2026-10-29 (session close)
-**Current phase:** T12 Results — T12a verified, T12b DONE (unverified), T12c DONE (unverified, + send-back notifications), T12d PDF next
-**Current task:** Session close 2026-10-29. This session delivered: (1) T12c results pages (`/results/` home, sheet entry, workflow buttons, printable report card) — commit 3061ee7; (2) bug fix — `submit_sheet` crashed assigning raw student IDs to the SubjectResult FK — commit 12bf745; (3) send-back notification + `apps/notifications` foundation (model, service, bell with unread badge, `/notifications/` list with mark read) — commit 9e8ff8c. Suite: 339 passed; `check` + `makemigrations --check` clean; CSS rebuilt; nothing pushed beyond the owner's last push unless listed.
-**Next task:** NEXT SESSION START HERE: Owner verifies T12c in the browser (enter scores as admin and assigned teacher, submit, review, approve, publish, open report card; then send a submitted sheet back and check the teacher's bell shows the notification). After that T12d: PDF report cards with WeasyPrint (install WeasyPrint, add a `/results/sheets/<pk>/pdf/` or report-card/PDF view, a print base template, and tests with realistic values).
+**Last updated:** 2026-10-29 (after workflow notifications)
+**Current phase:** T12 Results — T12a verified, T12b DONE (unverified), T12c DONE (unverified, notifications now cover every workflow step), T12d PDF next
+**Current task:** Workflow notifications for results (owner request after verifying the send-back note live): submit → office owners/admins; review/approve/publish → the submitting/assigned teacher. Commit `5809170`. Suite: 342 passed; `check` + `makemigrations --check` clean. T12c verification still open for: submit note reaching the owner/admin bell, review/approve/publish notes reaching the teacher.
+**Next task:** OWNER VERIFY T12c + workflow notifications in the browser: enter scores as assigned teacher → submit (admin bell pings) → review (teacher ping) → approve (teacher ping) → publish (teacher ping); also recheck send-back. Then T12d: PDF report cards with WeasyPrint (install WeasyPrint, add a `/results/sheets/<pk>/pdf/` or report-card/PDF view, a print base template, and tests with realistic values).
 
 ## Task board
 
@@ -28,7 +28,7 @@ Statuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 | T9 | Students and parents (parent with many children, history across promotions) | DONE (verified by owner) | T9a data model, T9b services, T9c pages. 199 tests passed; owner consulted on admission numbers: manual entry stays, no auto-numbering for now |
 | T10 | Attendance | DONE (unverified by owner in browser) | T10a model, T10b services, T10c pages. 227 tests passed on 2026-10-26; tenant isolation, role matrix, audit and read-only history covered |
 | T11 | Admissions | TODO | |
-| T12 | Assessments, results, grading, workflow, report cards (PDF) | IN PROGRESS | T12a models DONE (verified by owner 2026-10-28). T12b services DONE (unverified). T12c pages DONE (unverified): results home, sheet entry, workflow buttons, report card HTML, send-back notifications (apps/notifications); fixes: submit_sheet FK crash (12bf745); 339 total passed. T12d PDF next |
+| T12 | Assessments, results, grading, workflow, report cards (PDF) | IN PROGRESS | T12a models DONE (verified by owner 2026-10-28). T12b services DONE (unverified). T12c pages DONE (unverified): results home, sheet entry, workflow buttons, report card HTML, notifications on every workflow step (apps/notifications); fixes: submit_sheet FK crash (12bf745); 342 total passed. T12d PDF next |
 | T13 | Finance: fee structures, invoices, payments, receipts, balances | DONE (unverified by owner in browser) | T13a model, T13b services, T13c pages. 257 tests passed on 2026-10-26; idempotent payments, no overpay, audit, tenant isolation |
 | T14 | Dashboards, announcements, notifications, timetable | TODO | |
 | T15 | Documents, analytics, audit log | TODO | |
@@ -47,6 +47,17 @@ Statuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 | T21 | School public home page with gallery, news, admissions; own subdomain per school | TODO | Build after T9 to T13 |
 
 ## Task log (newest first)
+
+### Workflow notifications at every result step (2026-10-29, 342 passed)
+- Owner verified the send-back note live and asked for notifications across the whole workflow. New rule (owner approved): each action tells the OTHER side — who acts next or who is waiting
+  - `submit_sheet` (teacher) → all active owner/admin memberships: "Mathematics result submitted for review" + link (new `office_memberships(school)` helper in `apps/notifications/services.py`)
+  - `review_sheet` admin → the sheet's submitter: "reviewed, awaiting approval"
+  - `approve_sheet` admin → the submitter: "approved, can be published"
+  - `publish_sheet` admin → the submitter + assigned teacher(s) (dedup combined): "published, report cards ready"
+  - The acting admin never gets their own note; when an admin submits a sheet themselves they are skipped too
+- `_advance` grew `note_verb`/`recipients`/`note_body` params so the three step-services share one notify block; classes label in titles moved to `_class_label(sheet)` (reused by send-back)
+- No model/migration changes; no template changes
+- Tests `apps/results/test_services.py` +3 (submit pings the office not the teacher; a full walk yields 5 notes with the right recipients per kind; a school B admin gets nothing and the school A office gets the submit note). Updated 1 old test (send-back scenario now also shows the submit note)
 
 ### Session close (2026-10-29) — where to resume
 - Commits this session: `3061ee7` (T12c results pages), `12bf745` (submit_sheet FK fix), `9e8ff8c` (send-back notification + notifications app). 339 tests passing, checks clean, CSS rebuilt
