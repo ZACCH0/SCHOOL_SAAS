@@ -2,10 +2,10 @@
 
 Single source of truth for where the project stands. Rules for updating it are in `AGENTS.md` section 9.
 
-**Last updated:** 2026-10-29 (after workflow notifications)
-**Current phase:** T12 Results — T12a verified, T12b DONE (unverified), T12c DONE (unverified, notifications now cover every workflow step), T12d PDF next
-**Current task:** Workflow notifications for results (owner request after verifying the send-back note live): submit → office owners/admins; review/approve/publish → the submitting/assigned teacher. Commit `5809170`. Suite: 342 passed; `check` + `makemigrations --check` clean. T12c verification still open for: submit note reaching the owner/admin bell, review/approve/publish notes reaching the teacher.
-**Next task:** OWNER VERIFY T12c + workflow notifications in the browser: enter scores as assigned teacher → submit (admin bell pings) → review (teacher ping) → approve (teacher ping) → publish (teacher ping); also recheck send-back. Then T12d: PDF report cards with WeasyPrint (install WeasyPrint, add a `/results/sheets/<pk>/pdf/` or report-card/PDF view, a print base template, and tests with realistic values).
+**Last updated:** 2026-10-29 (after T12d PDF)
+**Current phase:** T12 Results — T12c workflow-page verification still partly open, T12d PDF DONE (unverified)
+**Current task:** T12d PDF report cards shipped (commit `0f3d848`): WeasyPrint 70.0 pinned in `requirements/base.txt`; GTK runtime installed on the owner's PC (one-time, `C:\Program Files\GTK3-Runtime Win64\bin` added to user PATH); `/results/students/<pk>/report-card/<pk>/pdf/` streams a real A4 PDF of PUBLISHED results only, same access rules as the HTML card; shared `_report_card_context` builder feeding both HTML and PDF; Download-PDF button on the report card page + PDF button on published sheet rows; WeasyPrint/fontTools loggers silenced in settings; CI installs libpango. Suite: 345 passed; `check` + `makemigrations --check` clean; CSS rebuilt. Sample generated from dev data: `C:\Users\DELL-7~1\AppData\Local\Temp\opencode\report-card-sample.pdf`.
+**Next task:** OWNER VERIFY the PDF in the browser: open a published report card and click "Download PDF" (check A4 layout, school header, pupil details, component columns, total/%/grade/remark, average, grading key, signature lines). Then close out T12 (tick REQUIREMENTS.md item 5 once results are verified) and start T14 dashboards/timetable or the parent portal. Note: owners/admins should start new VS Code terminals so the GTK PATH entry loads.
 
 ## Task board
 
@@ -28,7 +28,7 @@ Statuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 | T9 | Students and parents (parent with many children, history across promotions) | DONE (verified by owner) | T9a data model, T9b services, T9c pages. 199 tests passed; owner consulted on admission numbers: manual entry stays, no auto-numbering for now |
 | T10 | Attendance | DONE (unverified by owner in browser) | T10a model, T10b services, T10c pages. 227 tests passed on 2026-10-26; tenant isolation, role matrix, audit and read-only history covered |
 | T11 | Admissions | TODO | |
-| T12 | Assessments, results, grading, workflow, report cards (PDF) | IN PROGRESS | T12a models DONE (verified by owner 2026-10-28). T12b services DONE (unverified). T12c pages DONE (unverified): results home, sheet entry, workflow buttons, report card HTML, notifications on every workflow step (apps/notifications); fixes: submit_sheet FK crash (12bf745); 342 total passed. T12d PDF next |
+| T12 | Assessments, results, grading, workflow, report cards (PDF) | IN PROGRESS | T12a models DONE (verified by owner 2026-10-28). T12b services DONE (unverified). T12c pages: owner verified the workflow NOTIFICATIONS live (send-back earlier, submit/review/approve/publish 2026-10-29); rest of T12c still unverified. T12d PDF DONE (unverified) commit 0f3d848; 345 total passed |
 | T13 | Finance: fee structures, invoices, payments, receipts, balances | DONE (unverified by owner in browser) | T13a model, T13b services, T13c pages. 257 tests passed on 2026-10-26; idempotent payments, no overpay, audit, tenant isolation |
 | T14 | Dashboards, announcements, notifications, timetable | TODO | |
 | T15 | Documents, analytics, audit log | TODO | |
@@ -47,6 +47,15 @@ Statuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 | T21 | School public home page with gallery, news, admissions; own subdomain per school | TODO | Build after T9 to T13 |
 
 ## Task log (newest first)
+
+### T12d: PDF report cards with WeasyPrint (2026-10-29, 345 passed)
+- Owner asked the PDF to "print the result area only, look like a real standard result". Setup: `weasyprint==70.0` pinned in `requirements/base.txt`; the Windows GTK runtime (needed by pango) was installed once and its bin folder appended to the user PATH — app code stays portable (CI/Render just install libpango via the updated `.github/workflows/tests.yml`)
+- Data refactor: `apps/results/views.py` now has `_report_card_context` (pupil/period fetch, teacher-assignment rule, published sheets, scores by component name, component `columns` from the `weights_snapshot` union, average, scale legend) used by BOTH the HTML card and the PDF, so they can never drift
+- New view `student_report_card_pdf` → `/results/students/<pk>/report-card/<pk>/pdf/` (name `results:report_card_pdf`): renders `templates/results/report_card_pdf.html` (standalone A4 document, serif fonts, school header with address/phone, TERMINAL REPORT title band, pupil details box, bordered subject table S/N | Subject | component columns | Total | % | Grade | Remark, average row, grading-scale line, Class Teacher + Head/Principal signature lines and a validity stamp) and streams `application/pdf` with `attachment` filename like `report-card-FSS-2026-006-first-term.pdf`
+- Rules kept: only PUBLISHED sheets appear (status filter in the query), tenant scoping via `get_for_school_or_404`, teacher needs an assignment for the pupil's class, parent/bursar 403 — all covered by 3 new tests (`apps/results/test_views.py`: real `%PDF-` magic + disposition, unpublished → still a valid PDF with the no-results note, parent 403 + foreign school 404)
+- `report_card.html` gained a "Download PDF" button; published rows on `sheet.html` gained a "PDF" button; WeasyPrint/fontTools loggers set to WARNING in `config/settings/base.py` (the font-subset spam was drowning the console); CSS rebuilt (now minified, hence the big output.css diff)
+- WeasyPrint prints a one-time deprecation warning about HarfBuzz-Subset — harmless; will be handled at deployment
+- Live check: generated `report-card-sample.pdf` from the pilot school's two published sheets via the dev DB test client
 
 ### Workflow notifications at every result step (2026-10-29, 342 passed)
 - Owner verified the send-back note live and asked for notifications across the whole workflow. New rule (owner approved): each action tells the OTHER side — who acts next or who is waiting
