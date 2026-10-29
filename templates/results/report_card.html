@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Report card — {{ pupil.first_name }} {{ pupil.last_name }}{% endblock %}
+
+{% block content %}
+  <div class="mx-auto max-w-4xl">
+    <div class="mb-3 flex items-center justify-between print:hidden">
+      <a href="{% url 'results:home' %}" class="rounded-lg border border-line bg-white px-3 py-2 text-sm font-semibold text-brand-700">&larr; All sheets</a>
+      <button onclick="window.print()" class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white">Print</button>
+    </div>
+
+    <div class="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-line">
+      <div class="text-center">
+        <p class="text-2xl font-bold text-brand-700">{{ pupil.school.name }}</p>
+        <p class="text-sm text-muted">
+          {{ pupil.school.town|default:"" }}{% if pupil.school.town and pupil.school.state %}, {% endif %}{{ pupil.school.state|default:"" }}
+        </p>
+        <p class="mt-2 text-sm font-bold uppercase tracking-widest">Report card &middot; {{ period.name }} &middot; {{ period.session.name }}</p>
+      </div>
+
+      <hr class="my-4 border-t-2 border-brand-600" />
+
+      <dl class="text-sm">
+        <div class="flex justify-between border-b border-line py-2">
+          <dt class="text-muted">Pupil</dt>
+          <dd class="font-semibold text-ink">{{ pupil.last_name }}, {{ pupil.first_name }} &middot; {{ pupil.admission_number }}</dd>
+        </div>
+        <div class="flex justify-between border-b border-line py-2">
+          <dt class="text-muted">Class</dt>
+          <dd>{{ pupil.current_class }}{% if pupil.current_section %} · {{ pupil.current_section }}{% endif %}</dd>
+        </div>
+        <div class="flex justify-between border-b border-line py-2">
+          <dt class="text-muted">Term</dt>
+          <dd>{{ period.name }} — {{ period.session.name }}</dd>
+        </div>
+      </dl>
+
+      {% if subject_rows %}
+        <table class="mt-4 w-full text-left text-sm">
+          <thead class="border-b border-line text-xs uppercase tracking-wide text-muted">
+            <tr>
+              <th class="px-2 py-3 font-semibold">Subject</th>
+              <th class="px-2 py-3 font-semibold">Breakdown</th>
+              <th class="px-2 py-3 text-right font-semibold">Total</th>
+              <th class="px-2 py-3 text-right font-semibold">%</th>
+              <th class="px-2 py-3 font-semibold">Grade</th>
+              <th class="px-2 py-3 font-semibold">Remark</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in subject_rows %}
+              <tr class="border-b border-line last:border-0">
+                <td class="px-2 py-3 font-semibold text-ink">{{ row.sheet.subject.name }}</td>
+                <td class="px-2 py-3">
+                  {% if row.lines %}
+                    {% for line in row.lines %}
+                      <span class="text-xs text-muted">{{ line.0 }}:</span> <span class="font-semibold">{{ line.2 }}/{{ line.1 }}</span>{% if not forloop.last %}<br>{% endif %}
+                    {% endfor %}
+                  {% else %}
+                    <span class="text-muted">&mdash;</span>
+                  {% endif %}
+                </td>
+                <td class="px-2 py-3 text-right">{% if row.result %}{{ row.result.total }}{% else %}&mdash;{% endif %}</td>
+                <td class="px-2 py-3 text-right">{% if row.result %}{{ row.result.percentage }}{% else %}&mdash;{% endif %}</td>
+                <td class="px-2 py-3 font-bold">{% if row.result and row.result.grade %}{{ row.result.grade }}{% else %}&mdash;{% endif %}</td>
+                <td class="px-2 py-3">{% if row.result %}{{ row.result.grade_remark|default:"—" }}{% else %}&mdash;{% endif %}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="6" class="px-2 py-6 text-center text-muted">No published results for this term yet.</td></tr>
+            {% endfor %}
+            <tr class="font-bold text-ink">
+              <td class="px-2 py-3" colspan="4">Average</td>
+              <td class="px-2 py-3 text-right" colspan="2">{% if average %}{{ average }}{% else %}&mdash;{% endif %}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        {% if scale_lines %}
+          <p class="mt-6 text-xs text-muted">
+            Grading scale:
+            {% for line in scale_lines %}{{ line.grade }} from {{ line.min_percent }}%{% if line.remark %} ({{ line.remark }}){% endif %}{% if not forloop.last %}; {% endif %}{% endfor %}
+          </p>
+        {% endif %}
+
+        <p class="mt-4 text-xs text-muted">Printed on {{ today }}.</p>
+      {% else %}
+        <p class="mt-6 text-center text-sm text-muted">No results have been published for this pupil in this term yet.</p>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

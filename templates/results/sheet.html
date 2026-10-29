@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}{{ sheet.subject.name }} — {{ sheet.school_class.name }}{% endblock %}
+
+{% block content %}
+  <div class="mb-4 rounded-2xl bg-brand-600 px-4 py-5 text-white">
+    <p class="text-sm text-brand-50">Results &middot; {{ sheet.period.name }} &middot; {{ sheet.period.session.name }}</p>
+    <div class="mt-1 flex flex-wrap items-end justify-between gap-2">
+      <h1 class="text-2xl font-bold tracking-tight">
+        {{ sheet.subject.name }} — {{ sheet.school_class }}{% if sheet.section %} · {{ sheet.section }}{% endif %}
+      </h1>
+      <a href="{% url 'results:home' %}" class="rounded-lg border border-white/60 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10">All sheets</a>
+    </div>
+  </div>
+
+  <div class="mb-4 flex flex-wrap items-center gap-2">
+    {% if sheet.status == 'draft' %}
+      {% include "components/status_chip.html" with kind="neutral" label="Draft" %}
+    {% elif sheet.status == 'submitted' %}
+      {% include "components/status_chip.html" with kind="info" label="Submitted" %}
+    {% elif sheet.status == 'reviewed' %}
+      {% include "components/status_chip.html" with kind="info" label="Reviewed" %}
+    {% elif sheet.status == 'approved' %}
+      {% include "components/status_chip.html" with kind="brand" label="Approved" %}
+    {% else %}
+      {% include "components/status_chip.html" with kind="ok" label="Published" %}
+    {% endif %}
+    {% if editable %}
+      {% include "components/status_chip.html" with kind="brand" label="Open for entry" %}
+      <form method="post" action="{% url 'results:submit' sheet.pk %}">
+        {% csrf_token %}
+        <button class="rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700">Submit sheet</button>
+      </form>
+    {% endif %}
+    {% if is_manager and sheet.status == 'submitted' %}
+      <form method="post" action="{% url 'results:review' sheet.pk %}">
+        {% csrf_token %}
+        <button class="rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700">Mark reviewed</button>
+      </form>
+      <form method="post" action="{% url 'results:send_back' sheet.pk %}">
+        {% csrf_token %}
+        <button class="rounded-lg border border-line bg-white px-4 py-2.5 text-sm font-semibold text-ink hover:bg-slate-50">Send back to teacher</button>
+      </form>
+    {% endif %}
+    {% if is_manager and sheet.status == 'reviewed' %}
+      <form method="post" action="{% url 'results:approve' sheet.pk %}">
+        {% csrf_token %}
+        <button class="rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700">Approve sheet</button>
+      </form>
+      <form method="post" action="{% url 'results:send_back' sheet.pk %}">
+        {% csrf_token %}
+        <button class="rounded-lg border border-line bg-white px-4 py-2.5 text-sm font-semibold text-ink hover:bg-slate-50">Send back to teacher</button>
+      </form>
+    {% endif %}
+    {% if is_manager and sheet.status == 'approved' %}
+      <form method="post" action="{% url 'results:publish' sheet.pk %}">
+        {% csrf_token %}
+        <button class="rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700">Publish results</button>
+      </form>
+    {% endif %}
+  </div>
+
+  {% if columns %}
+    <p class="mb-4 text-sm text-muted">
+      Components:
+      {% for col in columns %}
+        <span class="font-semibold text-ink">{{ col.name }}</span> max {{ col.max_score }}{% if col.weight %} · weight {{ col.weight }}%{% endif %}{% if not forloop.last %}; {% endif %}
+      {% endfor %}
+    </p>
+  {% endif %}
+
+  {% if not editable %}
+    <p class="mb-4 rounded-lg bg-slate-100 px-4 py-2.5 text-sm text-slate-700">
+      {% if sheet.status != 'draft' %}This sheet is not open for entry. Only a draft sheet can be edited; the school office can send it back if scores must change.{% else %}You can view this sheet but not enter scores for it.{% endif %}
+    </p>
+  {% endif %}
+
+  {% if not columns %}
+    <div class="rounded-2xl bg-white p-10 text-center shadow-sm ring-1 ring-line">
+      <h2 class="text-lg font-bold">No assessment components yet</h2>
+      <p class="mx-auto mt-2 max-w-md text-slate-600">This session has no assessment components (tests and exams) for this level yet. Set them up before entering scores.</p>
+    </div>
+  {% else %}
+    <div class="grid gap-3">
+      {% for row in rows %}
+        <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-line" id="pupil-{{ row.pupil.pk }}">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div class="min-w-0">
+              <p class="font-bold text-ink">{{ row.pupil.last_name }}, {{ row.pupil.first_name }}</p>
+              <p class="text-xs text-muted">{{ row.pupil.admission_number }}</p>
+            </div>
+
+            {% if editable %}
+              <form method="post" action="{% url 'results:score' sheet.pk %}" class="flex flex-wrap items-end gap-2">
+                {% csrf_token %}
+                <input type="hidden" name="student" value="{{ row.pupil.pk }}">
+                {% for entry in row.entries %}
+                  {% if entry.column.pk %}
+                    <div>
+                      <label class="sr-only" for="score-{{ row.pupil.pk }}-{{ entry.column.pk }}">{{ entry.column.name }}</label>
+                      <span class="mb-1 block text-xs text-muted">{{ entry.column.name }}</span>
+                      <input type="number" inputmode="decimal" step="0.1" min="0" max="{{ entry.column.max_score }}"
+                             id="score-{{ row.pupil.pk }}-{{ entry.column.pk }}"
+                             name="score_{{ entry.column.pk }}"
+                             value="{% if entry.score %}{{ entry.score.value|stringformat:'s' }}{% endif %}"
+                             placeholder="0-{{ entry.column.max_score }}"
+                             class="h-11 w-24 rounded-lg border border-line px-2 text-sm">
+                    </div>
+                  {% endif %}
+                {% endfor %}
+                <button class="h-11 rounded-lg bg-brand-600 px-4 text-sm font-semibold text-white hover:bg-brand-700">Save</button>
+              </form>
+            {% else %}
+              <div class="flex flex-wrap items-center gap-x-5 gap-y-1">
+                {% for entry in row.entries %}
+                  <p class="text-sm">
+                    <span class="text-xs text-muted">{{ entry.column.name }}</span>
+                    {% if entry.score %}
+                      <span class="font-semibold text-ink">{{ entry.score.value }}</span>
+                    {% else %}
+                      <span class="text-muted">&mdash;</span>
+                    {% endif %}
+                  </p>
+                {% endfor %}
+              </div>
+            {% endif %}
+
+            <div class="text-right">
+              <p class="text-xs text-muted">Result</p>
+              {% if row.result %}
+                <p class="font-bold text-ink">{{ row.result.percentage }}% · {{ row.result.grade|default:"—" }}</p>
+                {% if row.result.grade_remark %}<p class="text-xs text-muted">{{ row.result.grade_remark }}</p>{% endif %}
+              {% else %}
+                <p class="text-ink">&mdash;</p>
+              {% endif %}
+            </div>
+
+            {% if sheet.status == 'published' %}
+              <a href="{% url 'results:report_card' row.pupil.pk sheet.period.pk %}"
+                 class="rounded-lg border border-brand-600 px-3 py-2 text-sm font-semibold text-brand-700 hover:bg-brand-50">Report card</a>
+            {% endif %}
+          </div>
+        </div>
+      {% empty %}
+        <div class="rounded-2xl bg-white p-6 text-center shadow-sm ring-1 ring-line">
+          <p class="text-sm text-muted">No active pupils in this class yet. Add them under Students.</p>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endblock %}

@@ -8,6 +8,9 @@ MANAGERS = [Role.OWNER, Role.ADMIN]
 # A teacher marks the register, so attendance stays visible to teachers too.
 ATTENDANCE_ROLES = [Role.OWNER, Role.ADMIN, Role.TEACHER]
 
+# Teachers enter and submit scores, so results are visible to them too.
+RESULTS_ROLES = [Role.OWNER, Role.ADMIN, Role.TEACHER]
+
 # Finance is for the school office only (the bursar handles money).
 FEES_ROLES = [Role.OWNER, Role.ADMIN, Role.BURSAR]
 
@@ -16,6 +19,7 @@ FEES_ROLES = [Role.OWNER, Role.ADMIN, Role.BURSAR]
 NAV_ITEMS = [
     ("Dashboard", "core:dashboard", None),
     ("Attendance", "attendance:home", ATTENDANCE_ROLES),
+    ("Results", "results:home", RESULTS_ROLES),
     ("Students", "students:list", MANAGERS),
     ("Classes", "classes:list", MANAGERS),
     ("Subjects", "subjects:list", MANAGERS),

@@ -2,10 +2,10 @@
 
 Single source of truth for where the project stands. Rules for updating it are in `AGENTS.md` section 9.
 
-**Last updated:** 2026-10-28
-**Current phase:** T12 Results — T12a verified, T12b services DONE (unverified), T12c pages next
-**Current task:** T12b services in `apps/results/services.py` done: `save_score` (draft sheets only; teacher only for an assigned subject — class-wide or exact section; owner/admin any; score capped by component max; component must match session and class level), grading (percentage = Σ(value/max×weight) ÷ Σweights × 100, grade from the session's active scale, boundaries snapshotted into `scale_snapshot`, result recomputed on every save), `submit_sheet` (refuses empty sheets and pupils missing component scores; captures `weights_snapshot`; grades everyone), `review/approve/publish` (owner/admin, strict order, actor FKs), `send_back` (submitted/reviewed → draft, clears submitter + snapshot; refused once approved). Audit entry per action. 305 tests passed 2026-10-28.
-**Next task:** T12c pages in `apps/results/views.py` + templates (STARTED, nothing visible yet): results home (sheets for a term; owner/admin all, teacher only assigned subjects), sheet page with per-pupil score form (draft + allowed only), workflow buttons (submit/review/approve/publish/send-back), report card HTML (published sheets only). Then T12d PDF (WeasyPrint). Only preparatory step done: `components_for_sheet` in services is now public for the views.
+**Last updated:** 2026-10-29
+**Current phase:** T12 Results — T12a verified, T12b DONE (unverified), T12c pages DONE (unverified), T12d PDF next
+**Current task:** T12c pages built: `/results/` home (term picker; stat cards for draft + awaiting publication + published; managers see all sheets, teachers only sheets whose subject they are assigned this session — a class-wide assignment covers section sheets), `/results/sheets/<pk>/` sheet page (per-pupil score row form on DRAFT sheets only; read-only shows values; submitted-or-later sheets display the weights captured at submission, not live config; result percentage + grade per pupil), POST `score/` saves a whole row via `save_score` per component with friendly per-component error messages, POST `submit/review/approve/publish/send-back/` drive the workflow (submit for assignee, rest manager-only via the decorator first), and `/results/students/<pk>/report-card/<period-pk>/` printable HTML report card (published sheets only; owner/admin any pupil, a teacher only pupils whose class they teach, parent/bursar refused — parent portal comes later). Nav "Results" for owner/admin/teacher. 21 page tests; 326 total passed.
+**Next task:** Owner verifies T12c in the browser (enter scores as admin and as an assigned teacher, submit, review, approve, publish, open a report card on published Real data: 11 seeded draft sheets + Mathematics scores for Primary 1 A exist). Then T12d PDF report cards with WeasyPrint (install WeasyPrint, add `/results/.../pdf/`, base template for print).
 
 ## Task board
 
@@ -28,7 +28,7 @@ Statuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 | T9 | Students and parents (parent with many children, history across promotions) | DONE (verified by owner) | T9a data model, T9b services, T9c pages. 199 tests passed; owner consulted on admission numbers: manual entry stays, no auto-numbering for now |
 | T10 | Attendance | DONE (unverified by owner in browser) | T10a model, T10b services, T10c pages. 227 tests passed on 2026-10-26; tenant isolation, role matrix, audit and read-only history covered |
 | T11 | Admissions | TODO | |
-| T12 | Assessments, results, grading, workflow, report cards (PDF) | IN PROGRESS | T12a models DONE (verified by owner 2026-10-28). T12b services DONE (unverified): save_score with teacher-assignment checks, weighted grading + scale snapshot, submit (completeness + weights snapshot), review/approve/publish, send_back until approved; 24 service tests; 305 total passed |
+| T12 | Assessments, results, grading, workflow, report cards (PDF) | IN PROGRESS | T12a models DONE (verified by owner 2026-10-28). T12b services DONE (unverified): save_score with teacher-assignment checks, weighted grading + scale snapshot, submit (completeness + weights snapshot), review/approve/publish, send_back until approved; T12c pages DONE (unverified): results home, sheet entry, workflow buttons, report card HTML; 21 page tests; 326 total passed. T12d PDF next |
 | T13 | Finance: fee structures, invoices, payments, receipts, balances | DONE (unverified by owner in browser) | T13a model, T13b services, T13c pages. 257 tests passed on 2026-10-26; idempotent payments, no overpay, audit, tenant isolation |
 | T14 | Dashboards, announcements, notifications, timetable | TODO | |
 | T15 | Documents, analytics, audit log | TODO | |
@@ -47,6 +47,16 @@ Statuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 | T21 | School public home page with gallery, news, admissions; own subdomain per school | TODO | Build after T9 to T13 |
 
 ## Task log (newest first)
+
+### T12c Results pages (2026-10-29, 326 passed)
+- New `apps/results/urls.py` (namespace `results`), `apps/results/views.py`, `templates/results/home.html`, `sheet.html`, `report_card.html`; nav entry "Results" (owner/admin/teacher) in `apps/core/navigation.py`; `config/urls.py` adds `results/`
+- Home: term picker reuses new `apps/academics/selectors.py` helpers `session_periods` + `current_or_last_period` (previously duplicated inside fees views — fees can switch to them later); teacher listing uses the same assignment rule as `ensure_can_edit_scores` (class-wide assignment also shows section sheets)
+- Sheet page: score-entry form is one form per pupil row (values post as `score_<component_pk>`); post-submit states show the `weights_snapshot` captured at submission with live-score lookup by component name, so later config changes cannot distort what was graded; score inputs only on DRAFT; published sheets get a per-pupil "Report card" link
+- Workflow buttons: submit visible to the assignee on draft; review/approve/publish/send-back manager-only (403 via decorator, service re-checks); every POST action goes through `role_required` + the service's own `require_role`
+- Report card: published sheets only (status filter in the query, never a display filter); shows per-subject breakdown (component), total, %, grade, remark, the grading-scale legend from `scale_snapshot`, and the mean of subject percentages; printable (print button + `print:hidden`), like the fee receipt
+- Access decisions: teacher must have a TeacherAssignment for the pupil's class (section matching) to open a report card; parent/bursar get 403 for now — parent portal comes later; report-card teacher check is view-level only
+- Tests `apps/results/test_views.py` (21): login/parent/bursar 403, admin home lists sheets, teacher sees only assigned subjects, class-wide covers section sheets, teacher 403 on foreign sheet, draft shows inputs / submitted does not, admin saves a row (Score + SubjectResult + audit), over-max friendly message, foreign pupil refused, teacher fills + submits, edit after submit refused, teacher cannot review/approve/publish, admin walks to PUBLISHED, approved sheet cannot be sent back, published sheet links report cards, report card shows 75.0 + scale legend, ignores unpublished sheets, cross-school 404, parent 403
+- No migrations; `check` and `makemigrations --check` clean; CSS rebuilt
 
 ### Session close (2026-10-28)
 - T12a verified by owner; pilot results config seeded; T12b services built (305 passed); T12c prepared (`components_for_sheet` made public, 48 results tests pass). Pushing to GitHub; T12c pages continue next session.
@@ -302,6 +312,9 @@ Statuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 - `apps/` folder for all feature apps; `core` app for pages that belong to no module
 
 ## Known issues and technical debt
+- `apps/fees/views.py` keeps its own `_current_period`; the shared helpers now live in `apps/academics/selectors.py` (`session_periods`, `current_or_last_period`) — fees can switch to them in a later cleanup
+- Report-card access for teachers is one rule for now (any assignment for the pupil's class); per-subject scoped report-card access can be tightened if the owner wants it
+- Report card shows the mean of subject percentages; class position/ranking is a per-school toggle planned for later
 - Login attempt limiting arrives with H2; proxy IP settings still to be set at deployment
 - Platform super admin has no dedicated permission helper or screens; uses Django admin
 - `bulk_create()` and `.update()` skip `AcademicPeriod.clean()`; use normal saves or forms
