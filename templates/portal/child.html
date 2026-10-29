@@ -38,6 +38,18 @@
         </table>
       </div>
       <p class="mt-3 text-sm text-muted">Average of subject percentages: {{ average }}</p>
+      {% if period %}
+        <div class="mt-3 flex flex-wrap gap-2">
+          <a href="{% url 'results:report_card' pupil.pk period.pk %}"
+             class="rounded-lg bg-brand-600 px-3 py-2.5 text-sm font-semibold text-white hover:bg-brand-700">
+            Open full report card
+          </a>
+          <a href="{% url 'results:report_card_pdf' pupil.pk period.pk %}"
+             class="rounded-lg border border-line bg-white px-3 py-2.5 text-sm font-semibold text-brand-700 hover:bg-brand-50">
+            Download PDF
+          </a>
+        </div>
+      {% endif %}
     {% else %}
       <p class="text-sm text-slate-600">No published results for this term yet.</p>
     {% endif %}

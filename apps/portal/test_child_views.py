@@ -234,3 +234,59 @@ def test_children_page_without_links_still_ok(client, school_a, login_as):
     login_as(school_a, Role.PARENT)
     response = client.get(reverse("portal:children"))
     assert response.status_code == 200
+
+
+# --- step 3: parents open the report card ---
+
+
+def test_parent_opens_the_report_card(
+    client, pupil, parent_linked, period, published
+):
+    response = client.get(
+        reverse("results:report_card", args=[pupil.pk, period.pk])
+    )
+
+    assert response.status_code == 200
+    assert response.context["average"] == Decimal("75.0")
+
+
+def test_parent_downloads_the_report_card_pdf(
+    client, pupil, parent_linked, period, published
+):
+    response = client.get(
+        reverse("results:report_card_pdf", args=[pupil.pk, period.pk])
+    )
+
+    assert response.status_code == 200
+    assert response["Content-Type"] == "application/pdf"
+    assert response.content[:5] == b"%PDF-"
+
+
+def test_report_card_denied_without_guardian_link(
+    client, school_a, structure, period, published, login_as
+):
+    login_as(school_a, Role.PARENT)
+    _, klass, section = structure
+    other_pupil = make_pupil(school_a, klass, section, number="PRT/009")
+
+    response = client.get(
+        reverse("results:report_card", args=[other_pupil.pk, period.pk])
+    )
+
+    assert response.status_code == 403
+
+
+def test_foreign_school_report_card_is_404(
+    client, school_a, school_b, login_as, structure, period
+):
+    """A pupil ID from another school can never be reached, even if a pupil
+    with that ID exists in this school and the parent knows the period."""
+    login_as(school_a, Role.PARENT)
+    _, klass, section = make_structure(school_b)
+    foreign_pupil = make_pupil(school_b, klass, section, number="BS/007")
+
+    response = client.get(
+        reverse("results:report_card", args=[foreign_pupil.pk, period.pk])
+    )
+
+    assert response.status_code == 404

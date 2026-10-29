@@ -19,7 +19,7 @@ from apps.academics.selectors import (
 from apps.schools.lookups import get_for_school_or_404
 from apps.schools.models import Membership
 from apps.schools.permissions import MANAGE_STRUCTURE_ROLES, role_required
-from apps.students.models import Student
+from apps.students.models import GuardianLink, Student
 from apps.subjects.models import TeacherAssignment
 
 from .models import ResultSheet
@@ -41,6 +41,10 @@ SCORE_ROLES = MANAGE_STRUCTURE_ROLES + (Role.TEACHER,)
 # Owners/admins see all sheets; a teacher sees only the subjects they teach.
 results_access = role_required(*SCORE_ROLES)
 manager_only = role_required(*MANAGE_STRUCTURE_ROLES)
+
+# The report card is also for guardians: they link to the pupil through a
+# GuardianLink in their school; the rule is enforced in _report_card_context.
+report_access = role_required(*(SCORE_ROLES + (Role.PARENT,)))
 
 
 def _text(exc):
@@ -259,13 +263,13 @@ def sheet_send_back(request, pk):
     return _run_action(request, pk, send_back, "sent back to draft")
 
 
-@results_access
+@report_access
 def student_report_card(request, student_pk, period_pk):
     context = _report_card_context(request, student_pk, period_pk)
     return render(request, "results/report_card.html", context)
 
 
-@results_access
+@report_access
 def student_report_card_pdf(request, student_pk, period_pk):
     """The same published results, as a printable A4 PDF report."""
     context = _report_card_context(request, student_pk, period_pk)
@@ -289,7 +293,8 @@ def student_report_card_pdf(request, student_pk, period_pk):
 def _report_card_context(request, student_pk, period_pk):
     """Fetch the pupil and period with the shared access rules and assemble
     their published results. Raises Http404 outside the school and
-    PermissionDenied for teachers without an assignment."""
+    PermissionDenied for teachers without an assignment and parents without
+    a guardian link."""
     pupil = get_for_school_or_404(
         Student.objects.for_school(request.school).select_related(
             "current_class", "current_class__level", "current_section",
@@ -303,16 +308,24 @@ def _report_card_context(request, student_pk, period_pk):
 
     role = request.membership.role
     if role not in MANAGE_STRUCTURE_ROLES:
-        assignments = TeacherAssignment.objects.for_school(request.school).filter(
-            teacher=request.membership, session=period.session,
-            school_class=pupil.current_class,
-        )
-        if pupil.current_section_id:
-            assignments = assignments.filter(
-                Q(section__isnull=True) | Q(section=pupil.current_section)
+        if role == Role.PARENT:
+            linked = GuardianLink.objects.filter(
+                school=request.school, student=pupil,
+                guardian=request.membership,
+            ).exists()
+            if not linked:
+                raise PermissionDenied
+        else:
+            assignments = TeacherAssignment.objects.for_school(request.school).filter(
+                teacher=request.membership, session=period.session,
+                school_class=pupil.current_class,
             )
-        if not assignments.exists():
-            raise PermissionDenied
+            if pupil.current_section_id:
+                assignments = assignments.filter(
+                    Q(section__isnull=True) | Q(section=pupil.current_section)
+                )
+            if not assignments.exists():
+                raise PermissionDenied
 
     section_match = Q(section__isnull=True)
     if pupil.current_section_id:
