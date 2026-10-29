@@ -284,9 +284,28 @@ def _advance(request, sheet, from_status, to_status, actor_field, action,
             request, recipients, kind=action,
             title=f"{sheet.subject.name} result {note_verb} ({_class_label(sheet)})",
             body=note_body,
-            url=f"/results/sheets/{sheet.pk}/",
-        )
+        url=f"/results/sheets/{sheet.pk}/",
+    )
     return sheet
+
+
+def published_subject_results(school, pupil, period):
+    """Published, graded subject results of one pupil for a period — the one
+    read source for report cards and the parent portal."""
+    section_match = Q(sheet__section__isnull=True)
+    if pupil.current_section_id:
+        section_match |= Q(sheet__section=pupil.current_section)
+    return (
+        SubjectResult.objects.for_school(school)
+        .filter(
+            sheet__period=period,
+            sheet__school_class=pupil.current_class,
+            sheet__status=ResultSheet.Status.PUBLISHED,
+        )
+        .filter(section_match)
+        .select_related("sheet", "sheet__subject", "sheet__section")
+        .order_by("sheet__subject__name")
+    )
 
 
 @transaction.atomic

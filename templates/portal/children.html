@@ -18,6 +18,7 @@
           </div>
           <div class="flex items-center gap-2">
             {% include "components/status_chip.html" with kind=child.status_kind label=child.status_label %}
+            <a href="{% url 'portal:child' child.pk %}" class="rounded-lg bg-brand-600 px-3 py-2.5 text-sm font-semibold text-white hover:bg-brand-700">Open</a>
           </div>
         </div>
       </div>
