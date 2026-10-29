@@ -2,10 +2,10 @@
 
 Single source of truth for where the project stands. Rules for updating it are in `AGENTS.md` section 9.
 
-**Last updated:** 2026-10-29
+**Last updated:** 2026-10-29 (session close)
 **Current phase:** T12 Results — T12a verified, T12b DONE (unverified), T12c DONE (unverified, + send-back notifications), T12d PDF next
-**Current task:** T12c extended: when a manager sends a sheet back, the app now creates a Notification for the assigned subject teacher and the previous submitter (actor excluded), with title "Subject result sent back (Class/Section)", body and a link to the sheet. New `apps/notifications` (model, `notify_memberships`, bell with unread badge in base.html, `/notifications/` list with mark one/all read). Teacher-assignment scope refactored into `teaching_assignments_for_sheet` shared by score entry, home listing, and send-back recipients. 339 tests passed.
-**Next task:** Owner verifies T12c in the browser (enter scores, submit, review, approve, publish, report card; then send a submitted sheet back and check the teacher's bell shows the notification). Then T12d PDF report cards with WeasyPrint.
+**Current task:** Session close 2026-10-29. This session delivered: (1) T12c results pages (`/results/` home, sheet entry, workflow buttons, printable report card) — commit 3061ee7; (2) bug fix — `submit_sheet` crashed assigning raw student IDs to the SubjectResult FK — commit 12bf745; (3) send-back notification + `apps/notifications` foundation (model, service, bell with unread badge, `/notifications/` list with mark read) — commit 9e8ff8c. Suite: 339 passed; `check` + `makemigrations --check` clean; CSS rebuilt; nothing pushed beyond the owner's last push unless listed.
+**Next task:** NEXT SESSION START HERE: Owner verifies T12c in the browser (enter scores as admin and assigned teacher, submit, review, approve, publish, open report card; then send a submitted sheet back and check the teacher's bell shows the notification). After that T12d: PDF report cards with WeasyPrint (install WeasyPrint, add a `/results/sheets/<pk>/pdf/` or report-card/PDF view, a print base template, and tests with realistic values).
 
 ## Task board
 
@@ -28,7 +28,7 @@ Statuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 | T9 | Students and parents (parent with many children, history across promotions) | DONE (verified by owner) | T9a data model, T9b services, T9c pages. 199 tests passed; owner consulted on admission numbers: manual entry stays, no auto-numbering for now |
 | T10 | Attendance | DONE (unverified by owner in browser) | T10a model, T10b services, T10c pages. 227 tests passed on 2026-10-26; tenant isolation, role matrix, audit and read-only history covered |
 | T11 | Admissions | TODO | |
-| T12 | Assessments, results, grading, workflow, report cards (PDF) | IN PROGRESS | T12a models DONE (verified by owner 2026-10-28). T12b services DONE (unverified): save_score with teacher-assignment checks, weighted grading + scale snapshot, submit (completeness + weights snapshot), review/approve/publish, send_back until approved; T12c pages DONE (unverified): results home, sheet entry, workflow buttons, report card HTML; 21 page tests; 326 total passed. T12d PDF next |
+| T12 | Assessments, results, grading, workflow, report cards (PDF) | IN PROGRESS | T12a models DONE (verified by owner 2026-10-28). T12b services DONE (unverified). T12c pages DONE (unverified): results home, sheet entry, workflow buttons, report card HTML, send-back notifications (apps/notifications); fixes: submit_sheet FK crash (12bf745); 339 total passed. T12d PDF next |
 | T13 | Finance: fee structures, invoices, payments, receipts, balances | DONE (unverified by owner in browser) | T13a model, T13b services, T13c pages. 257 tests passed on 2026-10-26; idempotent payments, no overpay, audit, tenant isolation |
 | T14 | Dashboards, announcements, notifications, timetable | TODO | |
 | T15 | Documents, analytics, audit log | TODO | |
@@ -47,6 +47,11 @@ Statuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 | T21 | School public home page with gallery, news, admissions; own subdomain per school | TODO | Build after T9 to T13 |
 
 ## Task log (newest first)
+
+### Session close (2026-10-29) — where to resume
+- Commits this session: `3061ee7` (T12c results pages), `12bf745` (submit_sheet FK fix), `9e8ff8c` (send-back notification + notifications app). 339 tests passing, checks clean, CSS rebuilt
+- Owner verified live during the session: they hit the submit bug in the browser (fixed + regression test); the rest of T12c/T12b is STILL DONE (unverified)
+- Resume point: owner browser verification of T12c + notifications, then T12d PDF report cards (WeasyPrint) — details in "Next task" above
 
 ### Send-back notification + notifications foundation (2026-10-29, 339 passed)
 - New app `apps/notifications`: `Notification` (ValidatedSchoolModel: recipient Membership, kind `<area>.<verb>` like audit, title, body, optional url, is_read, index on school+recipient+is_read); migration `notifications.0001` applied
