@@ -170,6 +170,9 @@ def test_parent_opens_own_child_page(
     assert response.context["results"][0].percentage == Decimal("75.00")
     assert response.context["average"] == Decimal("75.0")
     assert response.context["invoices"] == []
+    # the grade letter must be rendered, not just stored (regression: the
+    # template once used a wrong field name so the column stayed empty)
+    assert b">A<" in response.content
 
 
 def test_child_page_shows_real_fee_balance(
