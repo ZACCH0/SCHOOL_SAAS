@@ -31,6 +31,17 @@ def notify_memberships(request, recipients, *, kind, title, body="", url=""):
     return created
 
 
+def office_memberships(school):
+    """The active owner/admin memberships of a school: the people who
+    review, approve and publish result sheets."""
+    return list(
+        Membership.objects.filter(
+            school=school, is_active=True,
+            role__in=(Membership.Role.OWNER, Membership.Role.ADMIN),
+        )
+    )
+
+
 def unread_count(request):
     """How many of this member's school notifications are still unread."""
     membership = request.membership

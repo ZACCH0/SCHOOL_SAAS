@@ -5,7 +5,7 @@ from django.db.models import Q
 from django.db import transaction
 
 from apps.audit.services import record
-from apps.notifications.services import notify_memberships
+from apps.notifications.services import notify_memberships, office_memberships
 from apps.results.models import (
     AssessmentComponent,
     GradeBoundary,
@@ -21,6 +21,10 @@ from apps.students.models import Student
 from apps.subjects.models import TeacherAssignment
 
 SCORE_ROLES = MANAGE_STRUCTURE_ROLES + (Membership.Role.TEACHER,)
+
+
+def _class_label(sheet):
+    return sheet.section.name if sheet.section_id else sheet.school_class.name
 
 
 def _text(exc):
@@ -239,10 +243,24 @@ def submit_sheet(request, sheet):
         for_class=sheet.section.name if sheet.section_id else sheet.school_class.name,
         students=len(scored),
     )
+    notify_memberships(
+        request, office_memberships(request.school),
+        kind="results.sheet_submitted",
+        title=(
+            f"{sheet.subject.name} result submitted for review "
+            f"({_class_label(sheet)})"
+        ),
+        body=(
+            f"{request.membership.user.username} entered the scores and "
+            "submitted this sheet. It is awaiting review."
+        ),
+        url=f"/results/sheets/{sheet.pk}/",
+    )
     return sheet
 
 
-def _advance(request, sheet, from_status, to_status, actor_field, action):
+def _advance(request, sheet, from_status, to_status, actor_field, action,
+             note_verb, recipients=(), note_body=""):
     require_role(request, MANAGE_STRUCTURE_ROLES)
     ensure_owned(request, sheet)
     if sheet.status != from_status:
@@ -261,6 +279,13 @@ def _advance(request, sheet, from_status, to_status, actor_field, action):
         subject=sheet.subject.name,
         for_class=sheet.section.name if sheet.section_id else sheet.school_class.name,
     )
+    if recipients:
+        notify_memberships(
+            request, recipients, kind=action,
+            title=f"{sheet.subject.name} result {note_verb} ({_class_label(sheet)})",
+            body=note_body,
+            url=f"/results/sheets/{sheet.pk}/",
+        )
     return sheet
 
 
@@ -269,6 +294,11 @@ def review_sheet(request, sheet):
     return _advance(
         request, sheet, ResultSheet.Status.SUBMITTED,
         ResultSheet.Status.REVIEWED, "reviewed_by", "results.sheet_reviewed",
+        note_verb="reviewed",
+        recipients=(sheet.submitted_by,) if sheet.submitted_by else (),
+        note_body=(
+            "The school office reviewed this result sheet. It is awaiting approval."
+        ),
     )
 
 
@@ -277,14 +307,28 @@ def approve_sheet(request, sheet):
     return _advance(
         request, sheet, ResultSheet.Status.REVIEWED,
         ResultSheet.Status.APPROVED, "approved_by", "results.sheet_approved",
+        note_verb="approved",
+        recipients=(sheet.submitted_by,) if sheet.submitted_by else (),
+        note_body=(
+            "This result sheet is approved. It can now be published."
+        ),
     )
 
 
 @transaction.atomic
 def publish_sheet(request, sheet):
+    recipients = [a.teacher for a in teaching_assignments_for_sheet(sheet)]
+    if sheet.submitted_by:
+        recipients.append(sheet.submitted_by)
     return _advance(
         request, sheet, ResultSheet.Status.APPROVED,
         ResultSheet.Status.PUBLISHED, "published_by", "results.sheet_published",
+        note_verb="published",
+        recipients=recipients,
+        note_body=(
+            "This result is now live. The pupils' report cards for this "
+            "subject are ready."
+        ),
     )
 
 
@@ -322,7 +366,7 @@ def send_back(request, sheet):
         kind="results.sheet_sent_back",
         title=(
             f"{sheet.subject.name} result sent back "
-            f"({sheet.section.name if sheet.section_id else sheet.school_class.name})"
+            f"({_class_label(sheet)})"
         ),
         body=(
             "The school office returned this result sheet for correction. "

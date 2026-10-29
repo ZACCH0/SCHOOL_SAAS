@@ -405,21 +405,22 @@ def test_send_back_returns_to_draft_and_clears_the_submitter(
 def test_send_back_notifies_the_assigned_teacher_not_the_admin(
     school_a, sheet, pupil, components, scale, assigned_teacher, make_request
 ):
+    office = make_request(school_a, Role.ADMIN)
     request = make_request(school_a, Role.TEACHER, member=assigned_teacher)
     for component, value in zip(components, (12, 15, 48)):
         save_score(request, sheet, pupil, component, value)
-    admin_mem = make_request(school_a, Role.ADMIN)
     submit_sheet(request, sheet)
-    send_back(admin_mem, sheet)
+    send_back(office, sheet)
 
     notes = Notification.objects.all()
-    subjects = sorted(n.recipient_id for n in notes)
-    assert subjects == [assigned_teacher.pk]  # only the sheet's teacher
-    note = notes.get()
-    assert note.kind == "results.sheet_sent_back"
-    assert "Mathematics" in note.title
-    assert note.url == f"/results/sheets/{sheet.pk}/"
-    assert note.is_read is False
+    # submit told the office; the send-back goes to the sheet's teacher
+    back_note = notes.get(kind="results.sheet_sent_back")
+    assert back_note.recipient_id == assigned_teacher.pk
+    assert "Mathematics" in back_note.title
+    assert back_note.url == f"/results/sheets/{sheet.pk}/"
+    assert back_note.is_read is False
+    assert notes.get(kind="results.sheet_submitted").recipient_id == office.membership.pk
+    assert notes.count() == 2
 
 
 def test_send_back_also_notifies_a_non_teacher_submitter(
@@ -448,6 +449,78 @@ def test_an_approved_sheet_cannot_be_sent_back(
     approve_sheet(admin, sheet)
     with pytest.raises(ValidationError):
         send_back(admin, sheet)
+
+
+# --- workflow notifications ---
+
+
+def _fill_and_submit(school_a, sheet, pupil, components, member, make_request):
+    request = make_request(school_a, Role.TEACHER, member=member)
+    for component, value in zip(components, (12, 15, 48)):
+        save_score(request, sheet, pupil, component, value)
+    return submit_sheet(request, sheet)
+
+
+def test_submit_notifies_the_school_office_not_the_teacher(
+    school_a, sheet, pupil, components, scale, assigned_teacher, make_member, make_request
+):
+    office = make_member(school_a, role=Role.ADMIN)
+    submitted = _fill_and_submit(
+        school_a, sheet, pupil, components, assigned_teacher, make_request
+    )
+    assert submitted.status == ResultSheet.Status.SUBMITTED
+    notes = Notification.objects.all()
+    assert [n.recipient_id for n in notes] == [office.pk]
+    note = notes.get()
+    assert note.kind == "results.sheet_submitted"
+    assert "Mathematics" in note.title
+    assert note.url == f"/results/sheets/{sheet.pk}/"
+    assert note.is_read is False
+
+
+def test_the_whole_workflow_notifies_each_side_at_its_step(
+    school_a, sheet, pupil, components, scale, assigned_teacher, make_member, make_request
+):
+    admin_mem = make_member(school_a, role=Role.ADMIN)
+    owner_mem = make_member(school_a, role=Role.OWNER)
+    make_request(school_a, Role.ADMIN, member=admin_mem)
+    _fill_and_submit(school_a, sheet, pupil, components, assigned_teacher, make_request)
+    admin = make_request(school_a, Role.ADMIN, member=admin_mem)
+    review_sheet(admin, sheet)
+    approve_sheet(admin, sheet)
+    publish_sheet(admin, sheet)
+
+    recipients_by_kind = {}
+    for note in Notification.objects.all():
+        recipients_by_kind.setdefault(note.kind, set()).add(note.recipient_id)
+    assert recipients_by_kind["results.sheet_submitted"] == {
+        admin_mem.pk, owner_mem.pk,
+    }
+    assert recipients_by_kind["results.sheet_reviewed"] == {assigned_teacher.pk}
+    assert recipients_by_kind["results.sheet_approved"] == {assigned_teacher.pk}
+    assert recipients_by_kind["results.sheet_published"] == {assigned_teacher.pk}
+    # published notifies submitter + assigned teacher: the same person once
+    assert Notification.objects.count() == 5
+    # owners/admins do not hear about their own review, approval, publish
+    assert "results.sheet_reviewed" in recipients_by_kind
+
+
+def test_notifications_stay_inside_the_submitting_school(
+    school_a, school_b, sheet, pupil, components, scale, assigned_teacher, make_member, make_request
+):
+    stranger = make_member(school_b, role=Role.ADMIN)
+    office = make_member(school_a, role=Role.ADMIN)
+    _fill_and_submit(school_a, sheet, pupil, components, assigned_teacher, make_request)
+    admin = make_request(school_a, Role.ADMIN, member=office)
+    review_sheet(admin, sheet)
+    approve_sheet(admin, sheet)
+    publish_sheet(admin, sheet)
+    assert not Notification.objects.filter(recipient=stranger).exists()
+    # submit -> office; review/approve/publish -> the school_a teacher
+    assert Notification.objects.get(
+        kind="results.sheet_submitted"
+    ).recipient_id == office.pk
+    assert Notification.objects.count() == 4
 
 
 def test_grading_uses_the_active_scale_boundaries(
