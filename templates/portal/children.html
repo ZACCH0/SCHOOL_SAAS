@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}My children{% endblock %}
+
+{% block content %}
+  {% include "components/page_header.html" with crumb="Portal" title="My children" subtitle="Your children enrolled in this school" %}
+
+  <div class="grid gap-3 md:grid-cols-2">
+    {% for child in children %}
+      <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-line">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <div class="min-w-0">
+            <p class="font-bold text-ink">{{ child.first_name }} {{ child.last_name }}</p>
+            <p class="mt-1 text-sm text-slate-600">
+              {{ child.current_class }}{% if child.current_section %} - {{ child.current_section }}{% endif %}
+            </p>
+            <p class="mt-1 text-xs text-muted">Adm: {{ child.admission_number }}</p>
+          </div>
+          <div class="flex items-center gap-2">
+            {% include "components/status_chip.html" with kind=child.status_kind label=child.status_label %}
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      {% include "components/empty_state.html" with title="No children linked yet" body="When the school office links a child to your parent account, they will show up here." %}
+    {% endfor %}
+  </div>
+{% endblock %}

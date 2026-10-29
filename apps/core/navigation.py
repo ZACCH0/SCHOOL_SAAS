@@ -14,6 +14,9 @@ RESULTS_ROLES = [Role.OWNER, Role.ADMIN, Role.TEACHER]
 # Finance is for the school office only (the bursar handles money).
 FEES_ROLES = [Role.OWNER, Role.ADMIN, Role.BURSAR]
 
+# Parents only see their own children through this portal entry.
+PORTAL_ROLES = [Role.PARENT]
+
 # (label, url name, allowed roles). None means every role.
 # Add one line here when a module's page exists.
 NAV_ITEMS = [
@@ -25,6 +28,7 @@ NAV_ITEMS = [
     ("Classes", "classes:list", MANAGERS),
     ("Subjects", "subjects:list", MANAGERS),
     ("Fees", "fees:home", FEES_ROLES),
+    ("My children", "portal:children", PORTAL_ROLES),
 ]
 
 
