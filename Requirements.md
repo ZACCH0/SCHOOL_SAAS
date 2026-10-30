@@ -37,9 +37,9 @@ Types: **REQ** = product requirement, **TECH** = implementation rule, **FUTURE**
 2. [ ] Students and parents (parent with many children; history kept across promotions; statuses: active, graduated, withdrawn, suspended, transferred)
 3. [ ] Attendance (present, absent, late, excused; statistics; history)
 4. [ ] Admissions (application, review, accept/reject, admission number, convert to student)
-5. [ ] Assessments and results (configurable components and grade scales; calculated totals/grades/remarks; configurable ranking) — built and owner-verified 2026-10-29, EXCEPT ranking (per-school toggle, later)
+5. [x] Assessments and results (configurable components and grade scales; calculated totals/grades/remarks; configurable ranking) — built and owner-verified 2026-10-29; ranking built 2026-10-30 behind `School.show_ranking` (per-school toggle, HTML restyle unverified)
 6. [x] Result workflow: Draft, Submitted, Reviewed, Approved, Published; no silent edits after publish; audit record for changes — DONE (verified) 2026-10-29, with workflow notifications
-7. [x] Report cards (PDF) — DONE (verified) 2026-10-29 (WeasyPrint A4 terminal report)
+7. [x] Report cards (PDF) — DONE (verified) 2026-10-29 (WeasyPrint A4 terminal report); redesigned + matching HTML page 2026-10-30
 8. [x] Finance: fee structure, invoice, invoice items, payments, payment allocation, receipt, balance (full and partial payment, manual recording) — DONE (unverified in browser) 2026-10-26
 9. [ ] Dashboards (admin, teacher, parent) using real data only
 10. [ ] Announcements and in-app notifications
