@@ -10,10 +10,10 @@ class SchoolAdmin(admin.ModelAdmin):
     list_filter = ("school_type", "is_active")
 
     fieldsets = (
-        ("Basic information", {"fields": ("name", "slug", "school_type")}),
+        ("Basic information", {"fields": ("name", "slug", "motto", "school_type")}),
         ("Contact", {"fields": ("address", "phone", "email", "website")}),
         ("Location", {"fields": ("town", "lga", "state", "country")}),
-        ("Status", {"fields": ("is_active",)}),
+        ("Status", {"fields": ("is_active", "show_ranking")}),
     )
 
 @admin.register(Membership)

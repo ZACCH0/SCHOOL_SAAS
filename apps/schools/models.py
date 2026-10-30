@@ -14,6 +14,10 @@ class School(models.Model):
 
     name = models.CharField(max_length=200)
     slug = models.SlugField(unique=True)
+    motto = models.CharField(max_length=200, blank=True)
+    show_ranking = models.BooleanField(
+        default=False, verbose_name="show positions on report cards"
+    )
     address = models.TextField(blank=True)
     phone = models.CharField(max_length=20, blank=True)
     email = models.EmailField(blank=True)

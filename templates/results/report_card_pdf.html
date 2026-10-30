@@ -1,4 +1,4 @@
-<!doctype html>
+{% load l10n %}<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -6,190 +6,300 @@
   <style>
     @page {
       size: A4;
-      margin: 1.4cm 1.4cm 1.6cm;
+      margin: 1.1cm 1.2cm 1.3cm;
+    }
+    /* Public Sans (vendored), falling back to system sans-serif */
+    @font-face {
+      font-family: "Public Sans";
+      src: url("fonts/publicsans-regular.ttf");
+      font-weight: 400;
+    }
+    @font-face {
+      font-family: "Public Sans";
+      src: url("fonts/publicsans-semibold.ttf");
+      font-weight: 600;
+    }
+    @font-face {
+      font-family: "Public Sans";
+      src: url("fonts/publicsans-bold.ttf");
+      font-weight: 700;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: "Times New Roman", "Liberation Serif", serif;
-      font-size: 10.5pt;
+      font-family: "Public Sans", "Segoe UI", Arial, sans-serif;
+      font-size: 9pt;
       color: #0f172a;
+      line-height: 1.35;
     }
-    .school-name {
-      font-size: 17pt;
-      font-weight: bold;
+    /* the deep teal strip across the top edge of the sheet */
+    .topband { border-top: 8pt solid #115e59; margin-bottom: 6pt; }
+
+    /* --- header: logo left, school block centre, pupil photo right --- */
+    .masthead { width: 100%; border-collapse: collapse; }
+    .masthead td { vertical-align: middle; }
+    .logo-box {
+      width: 56pt; height: 56pt;
+      border: 1pt dashed #99f6e4;
+      background: #f0fdfa;
+      border-radius: 9pt;
       text-align: center;
-      text-transform: uppercase;
-      letter-spacing: 0.5pt;
-      color: #115e59;
+      font-size: 6.5pt; font-weight: 600; color: #0f766e;
+      display: table-cell; vertical-align: middle;
     }
-    .school-sub {
-      font-size: 9.5pt;
+    .photo-box {
+      width: 52pt; height: 62pt;
+      border: 0.8pt solid #cbd5e1;
+      border-radius: 7pt;
+      overflow: hidden;
       text-align: center;
-      margin-top: 2pt;
-    }
-    .report-title {
-      margin-top: 10pt;
-      padding: 4pt 0;
-      text-align: center;
-      font-weight: bold;
-      font-size: 12pt;
-      letter-spacing: 1.5pt;
-      border-top: 2pt solid #0f766e;
-      border-bottom: 1pt solid #0f766e;
-    }
-    .details {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10pt;
-      width: 100%;
-    }
-    .details td, .details th {
-      border: 0.8pt solid #94a3b8;
-      padding: 4pt 6pt;
-      font-weight: normal;
-      text-align: left;
-    }
-    .details th {
-      background: #ccfbf1;
-      font-weight: bold;
-      width: 22%;
-      white-space: nowrap;
-    }
-    table.results {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10pt;
-    }
-    table.results th, table.results td {
-      border: 0.8pt solid #94a3b8;
-      padding: 3.5pt 5pt;
-      text-align: left;
-    }
-    table.results th {
-      background: #ccfbf1;
-      font-size: 9pt;
-      text-transform: uppercase;
-      letter-spacing: 0.4pt;
-    }
-    table.results td.num, table.results th.num { text-align: center; }
-    table.results .total { font-weight: bold; }
-    table.results tr.summary td {
+      color: #94a3b8;
+      display: table-cell; vertical-align: middle;
       background: #f8fafc;
-      font-weight: bold;
     }
-    .caption { margin-top: 12pt; font-size: 9pt; color: #475569; }
-    .signatures {
-      width: 100%;
-      margin-top: 40pt;
-      border-collapse: collapse;
+    .school-cell { text-align: center; padding: 0 8pt; }
+    .school-name {
+      font-size: 15pt; font-weight: 700; letter-spacing: -0.2pt;
+      color: #115e59; text-transform: uppercase;
     }
-    .signatures td { width: 45%; }
-    .signatures .line {
-      border-top: 0.8pt solid #0f172a;
-      padding: 14pt 4pt 0 4pt;
-      font-size: 11.5pt;
-      text-align: center;
-      font-weight: bold;
-      line-height: 1.5;
+    .school-sub { font-size: 7.5pt; color: #64748b; margin-top: 1.5pt; }
+    .school-motto { font-size: 7.5pt; font-style: italic; color: #64748b; margin-top: 1pt; }
+
+    /* --- title band --- */
+    .report-title {
+      margin-top: 8pt; padding: 4.5pt 0; text-align: center;
+      background: #f1f5f4; border-radius: 5pt;
+      font-weight: 700; font-size: 9pt; letter-spacing: 0.18em;
     }
-    .spacer { width: 10%; }
-    .stamp {
-      margin-top: 24pt;
-      font-size: 9pt;
-      color: #475569;
-      text-align: center;
-      font-style: italic;
+
+    /* --- pupil details card --- */
+    .details {
+      width: 100%; border: 0.8pt solid #e2e8f0; border-radius: 8pt;
+      border-collapse: separate; border-spacing: 0;
+      margin-top: 8pt; padding: 6pt 10pt;
     }
+    .lbl {
+      font-size: 6.3pt; font-weight: 600; color: #64748b;
+      text-transform: uppercase; letter-spacing: 0.06em;
+    }
+    .val { font-size: 9pt; font-weight: 700; }
+
+    /* --- subjects table --- */
+    table.results {
+      width: 100%; border-collapse: collapse; margin-top: 8pt;
+      border: 0.8pt solid #e2e8f0; border-radius: 8pt; overflow: hidden;
+    }
+    table.results thead { background: #f1f5f4; border-bottom: 1.4pt solid #115e59; }
+    table.results th {
+      padding: 4pt 5pt; font-size: 6.8pt; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.03em;
+      border-bottom: 1.4pt solid #115e59;
+    }
+    table.results td { padding: 3.2pt 5pt; border-bottom: 0.5pt solid #e2e8f0; }
+    table.results td.subj { font-weight: 600; }
+    table.results .num { text-align: center; }
+    table.results .total { font-weight: 700; }
+    table.results tr:last-child td { border-bottom: none; }
+    .remark-cell { color: #475569; }
+
+    .chip {
+      display: inline-block;
+      padding: 0.8pt 7pt;
+      border-radius: 99pt;
+      font-size: 7.2pt; font-weight: 700;
+    }
+    .chip.ok { background: #dcfce7; color: #166534; }
+    .chip.tl { background: #ccfbf1; color: #115e59; }
+    .chip.wa { background: #fef3c7; color: #92400e; }
+    .chip.ne { background: #e2e8f0; color: #334155; }
+
+    /* --- summary strip --- */
+    .strip { width: 100%; border: 0.8pt solid #e2e8f0; border-radius: 8pt;
+      border-collapse: separate; border-spacing: 0; margin-top: 8pt; }
+    .strip td {
+      text-align: center; padding: 6pt 4pt; width: 25%;
+    }
+    .strip div.small { font-size: 6.3pt; font-weight: 600; color: #64748b;
+      text-transform: uppercase; letter-spacing: 0.06em; }
+    .strip div.big { font-size: 12pt; font-weight: 700; margin-top: 1pt; }
+    .blank-line {
+      display: inline-block;
+      width: 34pt;
+      border-bottom: 0.8pt solid #94a3b8;
+      height: 10pt;
+    }
+
+    /* --- write-in rows --- */
+    .writes { width: 100% ; border-collapse: collapse; margin-top: 8pt; }
+    .writes td { width: 50%; vertical-align: top; }
+    .writes .write-row { margin-top: 7pt; }
+    .write-line {
+      border-bottom: 0.8pt solid #94a3b8;
+      height: 12pt;
+    }
+
+    /* --- signature boxes --- */
+    .signature-area { width: 100%; border-collapse: collapse; margin-top: 22pt; }
+    .signature-area td { width: 42%; text-align: center; }
+    .signature-area .gap { width: 16%; }
+    .sig-box {
+      height: 34pt;
+      border: 1pt dashed #99f6e4;
+      background: #f0fdfa;
+      border-radius: 6pt;
+      color: #0f766e;
+      font-size: 6.8pt; font-weight: 600;
+      display: table-cell; vertical-align: middle;
+    }
+    .sig-cell { display: block; }
+    .sig-label {
+      border-top: 0.8pt solid #94a3b8;
+      margin-top: 5pt; padding-top: 3.5pt;
+      font-weight: 700; font-size: 8pt; letter-spacing: 0.05em;
+    }
+
+    .footer {
+      width: 100%; border-collapse: collapse; margin-top: 10pt;
+      border-top: 0.8pt solid #e2e8f0; padding-top: 5pt;
+    }
+    .footer .scale-item { font-size: 7pt; color: #334155; margin-right: 9pt; }
+    .caption { margin-top: 6pt; font-size: 6.8pt; color: #64748b; }
+    .stamp { margin-top: 5pt; font-size: 6.8pt; color: #64748b; font-style: italic; }
     .empty {
-      margin-top: 24pt;
-      text-align: center;
-      font-size: 11pt;
-      color: #475569;
+      margin-top: 30pt; text-align: center; font-size: 9.5pt; color: #64748b;
     }
   </style>
 </head>
 <body>
+  <div class="topband"></div>
+
   <header>
-    <p class="school-name">{{ pupil.school.name }}</p>
-    <p class="school-sub">
-      {{ pupil.school.address|default:"" }}{% if pupil.school.address %} &middot; {% endif %}
-      {{ pupil.school.town|default:"" }}{% if pupil.school.town and pupil.school.state %}, {% endif %}{{ pupil.school.state|default:"" }}
-      {% if pupil.school.phone %} &middot; {{ pupil.school.phone }}{% endif %}
-    </p>
-    <p class="report-title">TERMINAL REPORT &mdash; {{ period.name|upper }}, {{ period.session.name }} SESSION</p>
+    <table class="masthead">
+      <tr>
+        <td class="logo-box">School<br>Logo</td>
+        <td class="school-cell">
+          <p class="school-name">{{ pupil.school.name }}</p>
+          <p class="school-sub">
+            {{ pupil.school.address|default:"" }}{% if pupil.school.address and pupil.school.town %}, {% endif %}{{ pupil.school.town|default:"" }}{% if pupil.school.town and pupil.school.state %}, {% endif %}{{ pupil.school.state|default:"" }}
+            {% if pupil.school.phone %} &middot; {{ pupil.school.phone }}{% endif %}
+          </p>
+          {% if pupil.school.motto %}<p class="school-motto">&ldquo;{{ pupil.school.motto }}&rdquo;</p>{% endif %}
+        </td>
+        <td class="photo-box">Photo</td>
+      </tr>
+    </table>
+    <p class="report-title">TERMINAL REPORT SHEET</p>
   </header>
 
-  <table class="details">
-    <tr>
-      <th>Name of pupil</th>
-      <td colspan="3">{{ pupil.last_name }}, {{ pupil.first_name }}</td>
-    </tr>
-    <tr>
-      <th>Admission no.</th>
-      <td>{{ pupil.admission_number }}</td>
-      <th>Class</th>
-      <td>{{ pupil.current_class }}{% if pupil.current_section %} &mdash; {{ pupil.current_section.name }}{% endif %}</td>
-    </tr>
-    <tr>
-      <th>Sex</th>
-      <td>{{ pupil.sex|capfirst }}</td>
-      <th>Term</th>
-      <td>{{ period.name }} ({{ period.start_date }} &ndash; {{ period.end_date }})</td>
-    </tr>
-  </table>
-
   {% if subject_rows %}
+    <table class="details">
+      <tr>
+        <td><span class="lbl">Student name</span></td><td><span class="val">{{ pupil.last_name }}, {{ pupil.first_name }}</span></td>
+        <td><span class="lbl">Class</span></td><td><span class="val">{{ pupil.current_class }}{% if pupil.current_section %} &middot; {{ pupil.current_section.name }}{% endif %}</span></td>
+      </tr>
+      <tr>
+        <td><span class="lbl">Session</span></td><td><span class="val">{{ period.session.name }}</span></td>
+        <td><span class="lbl">Term</span></td><td><span class="val">{{ period.name }}</span></td>
+      </tr>
+      <tr>
+        <td><span class="lbl">Admission no.</span></td><td><span class="val">{{ pupil.admission_number }}</span></td>
+        <td><span class="lbl">Roll no.</span></td><td><span class="val">&mdash;</span></td>
+      </tr>
+      <tr>
+        <td><span class="lbl">Attendance</span></td>
+        <td><span class="val">{% if attendance and attendance.days %}{{ attendance.present }} out of {{ attendance.days }}{% else %}&mdash;{% endif %}</span></td>
+        <td><span class="lbl">Next term begins</span></td>
+        <td><span class="val">{% if next_term %}{% localize %}{{ next_term.start_date|date:"jS F, Y" }}{% endlocalize %}{% else %}&mdash;{% endif %}</span></td>
+      </tr>
+    </table>
+
     <table class="results">
       <thead>
         <tr>
-          <th class="num" style="width:4%">S/N</th>
-          <th style="width:22%">Subject</th>
-          {% for column in columns %}<th class="num">{{ column }}</th>{% endfor %}
-          <th class="num" style="width:8%">Total</th>
-          <th class="num" style="width:7%">%</th>
-          <th class="num" style="width:7%">Grade</th>
-          <th style="width:20%">Remark</th>
+          <th class="">Subject</th>
+          {% for column in columns_info %}<th class="num">{{ column.name|upper }} /{{ column.max }}</th>{% endfor %}
+          <th class="num">Total</th>
+          {% if show_ranking %}<th class="num">Position</th>{% endif %}
+          <th class="">Remark</th>
         </tr>
       </thead>
       <tbody>
         {% for row in subject_rows %}
           <tr>
-            <td class="num">{{ forloop.counter }}</td>
-            <td class="total">{{ row.sheet.subject.name }}</td>
+            <td class="subj">{{ row.sheet.subject.name }}</td>
             {% for cell in row.cells %}
               <td class="num">{% if cell %}{{ cell.1 }}{% else %}&mdash;{% endif %}</td>
             {% endfor %}
             <td class="num total">{% if row.result %}{{ row.result.total }}{% else %}&mdash;{% endif %}</td>
-            <td class="num">{% if row.result %}{{ row.result.percentage }}{% else %}&mdash;{% endif %}</td>
-            <td class="num total">{% if row.result and row.result.grade %}{{ row.result.grade }}{% else %}&mdash;{% endif %}</td>
-            <td>{% if row.result %}{{ row.result.grade_remark|default:"&mdash;" }}{% else %}&mdash;{% endif %}</td>
+            {% if show_ranking %}<td class="num">{% if row.position %}{{ row.position }}{% else %}&mdash;{% endif %}</td>{% endif %}
+            <td class="remark-cell">{% if row.result %}{{ row.result.grade_remark|default:"&mdash;" }}{% else %}&mdash;{% endif %}</td>
           </tr>
         {% endfor %}
-        <tr class="summary">
-          <td class="num"></td>
-          <td colspan="{{ columns|length|add:1 }}">Average (mean of subject percentages)</td>
-          <td class="num" colspan="3">{% if average %}{{ average }}{% else %}&mdash;{% endif %}</td>
-          <td></td>
-        </tr>
       </tbody>
     </table>
 
-    {% if scale_lines %}
-      <p class="caption">
-        Grading scale:
-        {% for line in scale_lines %}{{ line.grade }} from {{ line.min_percent }}%{% if line.remark %} ({{ line.remark }}){% endif %}{% if not forloop.last %}; {% endif %}{% endfor %}
-      </p>
-    {% endif %}
-
-    <p class="caption">Printed on {{ today }} &middot; Copy for the parent/pupil.</p>
-
-    <table class="signatures">
+    <table class="strip">
       <tr>
-        <td class="line">Class Teacher's Signature &amp; Date</td>
-        <td class="spacer"></td>
-        <td class="line">Head Teacher's / Principal's Signature &amp; Date</td>
+        <td>
+          <div class="small">Total score</div>
+          <div class="big">{% if total_max %}{{ total_score|floatformat:0 }} / {{ total_max|floatformat:0 }}{% else %}&mdash;{% endif %}</div>
+        </td>
+        <td>
+          <div class="small">Average</div>
+          <div class="big">{% if average %}{{ average }}{% else %}&mdash;{% endif %}</div>
+        </td>
+        <td>
+          <div class="small">Position in class</div>
+          <div class="big">{% if show_ranking and class_position %}{{ class_position }}{% else %}&mdash;{% endif %}</div>
+        </td>
+        <td>
+          <div class="small">Promoted to</div>
+          <div class="big"><span class="blank-line"></span></div>
+        </td>
       </tr>
     </table>
+
+    <table class="writes">
+      <tr>
+        <td>
+          <div class="write-row"><span class="lbl" style="margin-right:6pt">Conduct</span><span class="write-line"></span></div>
+          <div class="write-row"><span class="lbl" style="margin-right:6pt">Attitude</span><span class="write-line"></span></div>
+          <div class="write-row"><span class="lbl" style="margin-right:6pt">Interest</span><span class="write-line"></span></div>
+        </td>
+        <td>
+          <div class="write-row"><span class="lbl" style="margin-right:6pt">Class teacher's remarks</span><span class="write-line"></span></div>
+          <div class="write-row"><span class="lbl" style="margin-right:6pt">Head teacher's remarks</span><span class="write-line"></span></div>
+          <div class="write-row"><span class="lbl" style="margin-right:6pt">Parent's comment</span><span class="write-line"></span></div>
+        </td>
+      </tr>
+    </table>
+
+    <table class="signature-area">
+      <tr>
+        <td>
+          <span class="sig-cell"><span class="sig-box">[ Signature image ]</span></span>
+          <div class="sig-label">CLASS TEACHER</div>
+        </td>
+        <td class="gap"></td>
+        <td>
+          <span class="sig-cell"><span class="sig-box">[ Signature image ]</span></span>
+          <div class="sig-label">HEAD TEACHER</div>
+        </td>
+      </tr>
+    </table>
+
+    <table class="footer">
+      {% if scale_lines %}
+        <tr>
+          <td>
+            <span class="lbl" style="margin-right:6pt">Grading scale</span>
+            {% for line in scale_lines %}
+              <span class="scale-item"><b>{{ line.grade }}</b> {{ line.min_percent|floatformat:0 }}&ndash;{{ line.top_percent|floatformat:0 }} {{ line.remark|default:"" }}</span>
+            {% endfor %}
+          </td>
+        </tr>
+      {% endif %}
+    </table>
+    <p class="caption">Printed on {% localize %}{{ today|date:"jS F, Y" }}{% endlocalize %} &middot; Copy for the parent/pupil.</p>
     <p class="stamp">This result was generated from the school records and remains valid only with the school's signature and seal.</p>
   {% else %}
     <p class="empty">No results have been published for this pupil in this term yet.</p>

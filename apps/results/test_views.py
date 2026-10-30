@@ -158,7 +158,7 @@ def _fill_and_submit(client, sheet, pupils, components):
 
 def _manager_member(school_a, role=Role.ADMIN):
     user = get_user_model().objects.create_user(
-        f"{role}-views", password="S3cure-pass!"
+        f"{role}-views-{get_user_model().objects.count()}", password="S3cure-pass!"
     )
     return Membership.objects.create(user=user, school=school_a, role=role)
 
@@ -516,3 +516,256 @@ def test_the_pdf_report_card_follows_the_same_access_rules(
     assert client.get(
         reverse("results:report_card_pdf", args=[stranger.pk, period.pk])
     ).status_code == 404
+
+
+# --- ranking, totals, attendance on the report card ---
+
+
+def _fill_custom(client, sheet, values_by_pupil, components):
+    """Save one row of scores per pupil with given component values."""
+    for pupil, values in values_by_pupil.items():
+        data = {"student": pupil.pk}
+        for component, value in zip(components, values):
+            data[f"score_{component.pk}"] = str(value)
+        client.post(reverse("results:score", args=[sheet.pk]), data)
+
+
+def _publish_custom(school_a, sheet, values_by_pupil, components):
+    """As an admin: save the given scores and walk the workflow to published."""
+    admin = _manager_client(school_a)
+    _fill_custom(admin, sheet, values_by_pupil, components)
+    admin.post(reverse("results:submit", args=[sheet.pk]))
+    admin.post(reverse("results:review", args=[sheet.pk]))
+    admin.post(reverse("results:approve", args=[sheet.pk]))
+    admin.post(reverse("results:publish", args=[sheet.pk]))
+    sheet.refresh_from_db()
+    assert sheet.status == ResultSheet.Status.PUBLISHED
+    return admin
+
+
+def _published_context(school_a, make_request, pupil, period):
+    from .views import _report_card_context
+
+    request = make_request(school_a)
+    return _report_card_context(request, pupil.pk, period.pk)
+
+
+def test_ranking_ranks_subjects_by_percentage(
+    client, school_a, session, period, scale, make_request,
+):
+    from .views import _report_card_context
+
+    level = Level.objects.create(school=school_a, name="Primary", order=1)
+    primary_three = SchoolClass.objects.create(
+        school=school_a, level=level, name="Primary 3", order=3,
+    )
+    section_a = Section.objects.create(
+        school=school_a, school_class=primary_three, name="A",
+    )
+    subject = Subject.objects.create(school=school_a, name="Mathematics")
+    ClassSubject.objects.create(
+        school=school_a, school_class=primary_three, subject=subject,
+    )
+    sheet = ResultSheet.objects.create(
+        school=school_a, period=period, school_class=primary_three,
+        section=section_a, subject=subject,
+    )
+    components = [
+        AssessmentComponent.objects.create(
+            school=school_a, session=session, name=name,
+            max_score=Decimal(max_score), weight=Decimal(max_score),
+        )
+        for name, max_score in (("First Test", 20), ("Second Test", 20), ("Examination", 60))
+    ]
+    pupils = []
+    for number, (first, last, values) in enumerate([
+        ("Ada", "Top", (18, 18, 54)),      # 90, 1st
+        ("Bisi", "Bold", (12, 15, 48)),    # 75, joint 2nd
+        ("Chika", "Bold", (10, 20, 45)),   # 75, joint 2nd
+        ("Dada", "Last", (10, 11, 40)),    # 61, 4th (ties share 2nd)
+    ], start=1):
+        pupils.append(
+            Student.objects.create(
+                school=school_a, first_name=first, last_name=last,
+                sex="female", date_of_birth=date(2018, 3, 5),
+                admission_number=f"FSS/2026/{number:03d}",
+                current_class=primary_three, current_section=section_a,
+            )
+        )
+    values_by_pupil = dict(zip(pupils, [(18, 18, 54), (12, 15, 48), (10, 20, 45), (10, 11, 40)]))
+    school_a.show_ranking = True
+    school_a.save()
+    _publish_custom(school_a, sheet, values_by_pupil, components)
+
+    for pupil, expected in zip(pupils, ["1st", "2nd", "2nd", "4th"]):
+        context = _published_context(school_a, make_request, pupil, period)
+        assert context["subject_rows"][0]["position"] == expected
+        # with one subject the class position equals the subject position
+        assert context["class_position"] == f"{expected} of 4"
+
+
+def test_ranking_stays_hidden_when_the_school_has_it_off(
+    client, school_a, session, period, scale, make_request,
+):
+    from .views import _report_card_context
+
+    level = Level.objects.create(school=school_a, name="Primary", order=1)
+    primary_three = SchoolClass.objects.create(
+        school=school_a, level=level, name="Primary 3", order=3,
+    )
+    section_a = Section.objects.create(
+        school=school_a, school_class=primary_three, name="A",
+    )
+    subject = Subject.objects.create(school=school_a, name="Mathematics")
+    ClassSubject.objects.create(
+        school=school_a, school_class=primary_three, subject=subject,
+    )
+    sheet = ResultSheet.objects.create(
+        school=school_a, period=period, school_class=primary_three,
+        section=section_a, subject=subject,
+    )
+    components = [
+        AssessmentComponent.objects.create(
+            school=school_a, session=session, name=name,
+            max_score=Decimal(max_score), weight=Decimal(max_score),
+        )
+        for name, max_score in (("First Test", 20), ("Second Test", 20), ("Examination", 60))
+    ]
+    pupils = [
+        Student.objects.create(
+            school=school_a, first_name=first, last_name=last,
+            sex="female", date_of_birth=date(2018, 3, 5),
+            admission_number=f"FSS/2026/{number:03d}",
+            current_class=primary_three, current_section=section_a,
+        )
+        for number, (first, last) in enumerate(
+            [("Ada", "Top"), ("Bisi", "Bold")], start=1
+        )
+    ]
+    values_by_pupil = {
+        pupils[0]: (18, 18, 54),
+        pupils[1]: (12, 15, 48),
+    }
+    _publish_custom(school_a, sheet, values_by_pupil, components)
+
+    context = _published_context(school_a, make_request, pupils[1], period)
+    assert context["show_ranking"] is False
+    assert all("position" not in row for row in context["subject_rows"])
+    assert context["class_position"] is None
+
+
+def test_report_card_totals_scores_per_published_subject(
+    client, school_a, session, period, scale, make_request,
+):
+    from .views import _report_card_context
+
+    level = Level.objects.create(school=school_a, name="Primary", order=1)
+    primary_three = SchoolClass.objects.create(
+        school=school_a, level=level, name="Primary 3", order=3,
+    )
+    section_a = Section.objects.create(
+        school=school_a, school_class=primary_three, name="A",
+    )
+    pupils = [
+        Student.objects.create(
+            school=school_a, first_name="Ada", last_name="Top", sex="female",
+            date_of_birth=date(2018, 3, 5), admission_number="FSS/2026/001",
+            current_class=primary_three, current_section=section_a,
+        )
+    ]
+    components = [
+        AssessmentComponent.objects.create(
+            school=school_a, session=session, name=name,
+            max_score=Decimal(max_score), weight=Decimal(max_score),
+        )
+        for name, max_score in (("First Test", 20), ("Second Test", 20), ("Examination", 60))
+    ]
+    made = []
+    for name, values in (("Mathematics", (12, 15, 48)), ("English Studies", (14, 16, 55))):
+        subject = Subject.objects.create(school=school_a, name=name)
+        ClassSubject.objects.create(
+            school=school_a, school_class=primary_three, subject=subject,
+        )
+        sheet = ResultSheet.objects.create(
+            school=school_a, period=period, school_class=primary_three,
+            section=section_a, subject=subject,
+        )
+        _publish_custom(
+            school_a, sheet,
+            {pupils[0]: (12, 15, 48) if name == "Mathematics" else (14, 16, 55)},
+            components,
+        )
+        made.append(sheet)
+
+    context = _published_context(school_a, make_request, pupils[0], period)
+    # scoreboard math: 75 + 85 = 160 out of 100 + 100, average 80.0
+    assert context["total_score"] == Decimal("160.00")
+    assert context["total_max"] == Decimal("200")
+    assert context["average"] == Decimal("80.0")
+
+
+def test_report_card_counts_attendance_for_the_pupil(
+    client, school_a, session, period, scale, make_request,
+):
+    from apps.attendance.models import AttendanceRecord, AttendanceSession
+    from .views import _report_card_context
+
+    level = Level.objects.create(school=school_a, name="Primary", order=1)
+    primary_three = SchoolClass.objects.create(
+        school=school_a, level=level, name="Primary 3", order=3,
+    )
+    section_a = Section.objects.create(
+        school=school_a, school_class=primary_three, name="A",
+    )
+    pupil = Student.objects.create(
+        school=school_a, first_name="Ada", last_name="Top", sex="female",
+        date_of_birth=date(2018, 3, 5), admission_number="FSS/2026/001",
+        current_class=primary_three, current_section=section_a,
+    )
+    marked_by = make_request(school_a).membership
+    attended = AttendanceRecord.Status.PRESENT
+    absent = AttendanceRecord.Status.ABSENT
+    for number, status in [(15, attended), (16, absent)]:
+        register = AttendanceSession.objects.create(
+            school=school_a, school_class=primary_three, section=section_a,
+            date=date(2026, 9, number), session=period.session, period=period,
+            marked_by=marked_by,
+        )
+        AttendanceRecord.objects.create(
+            school=school_a, register=register, student=pupil, status=status,
+        )
+    # a register for another class never counts for this pupil
+    other_class = SchoolClass.objects.create(
+        school=school_a, level=level, name="Primary 1", order=1,
+    )
+    AttendanceSession.objects.create(
+        school=school_a, school_class=other_class,
+        date=date(2026, 9, 17), session=period.session, period=period,
+        marked_by=marked_by,
+    )
+
+    context = _published_context(school_a, make_request, pupil, period)
+    assert context["attendance"] == {"present": 1, "days": 2}
+
+
+def test_report_card_prefills_the_next_term_start_date(
+    client, school_a, session, period, scale, make_request,
+):
+    from .views import _report_card_context
+
+    level = Level.objects.create(school=school_a, name="Primary", order=1)
+    primary_three = SchoolClass.objects.create(
+        school=school_a, level=level, name="Primary 3", order=3,
+    )
+    pupil = Student.objects.create(
+        school=school_a, first_name="Ada", last_name="Top", sex="female",
+        date_of_birth=date(2018, 3, 5), admission_number="FSS/2026/001",
+        current_class=primary_three,
+    )
+    second_term = session.periods.create(
+        school=school_a, name="Second Term", order=2,
+        start_date=date(2027, 1, 11), end_date=date(2027, 4, 2),
+    )
+    context = _published_context(school_a, make_request, pupil, period)
+    assert context["next_term"] == second_term
+    assert context["next_term"].start_date == date(2027, 1, 11)

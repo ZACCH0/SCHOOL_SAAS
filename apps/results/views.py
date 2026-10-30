@@ -1,8 +1,9 @@
 from decimal import Decimal
 
+from django.conf import settings
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.db.models import Q
+from django.db.models import Avg, Q
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.template.loader import render_to_string
@@ -16,13 +17,14 @@ from apps.academics.selectors import (
     current_session,
     session_periods,
 )
+from apps.attendance.models import AttendanceRecord
 from apps.schools.lookups import get_for_school_or_404
 from apps.schools.models import Membership
 from apps.schools.permissions import MANAGE_STRUCTURE_ROLES, role_required
 from apps.students.models import GuardianLink, Student
 from apps.subjects.models import TeacherAssignment
 
-from .models import ResultSheet
+from .models import ResultSheet, SubjectResult
 from .services import (
     approve_sheet,
     components_for_sheet,
@@ -276,7 +278,12 @@ def student_report_card_pdf(request, student_pk, period_pk):
     html = render_to_string("results/report_card_pdf.html", context, request=request)
     from weasyprint import HTML  # imported here so a missing GTK library only affects this view
 
-    pdf = HTML(string=html).write_pdf()
+    # base_url resolves the template's relative font paths
+    # (fonts/publicsans-*.ttf inside static/fonts/)
+    from pathlib import Path
+
+    base_url = Path(settings.BASE_DIR, "static").resolve().as_uri() + "/"
+    pdf = HTML(string=html, base_url=base_url).write_pdf()
     safe_admission = "".join(
         ch if ch.isalnum() else "-" for ch in context["pupil"].admission_number
     )
@@ -288,6 +295,33 @@ def student_report_card_pdf(request, student_pk, period_pk):
         "attachment", f"{filename}.pdf"
     )
     return response
+
+
+def _ordinal(number):
+    """1st, 2nd, 3rd ... for report-card positions."""
+    suffix = "th"
+    if 11 <= number % 100 <= 13:
+        suffix = "th"
+    elif number % 10 == 1:
+        suffix = "st"
+    elif number % 10 == 2:
+        suffix = "nd"
+    elif number % 10 == 3:
+        suffix = "rd"
+    return f"{number}{suffix}"
+
+
+def _rank(ordered_percentages, mine):
+    """Standard competition ranking: ties share a position."""
+    better = sum(1 for value in ordered_percentages if value > mine)
+    return _ordinal(better + 1)
+
+
+def _sheet_max_total(sheet):
+    """The subject's full mark: the max score of every graded component."""
+    if sheet.weights_snapshot:
+        return sum(Decimal(str(entry["max_score"])) for entry in sheet.weights_snapshot)
+    return sum(component.max_score for component in components_for_sheet(sheet))
 
 
 def _report_card_context(request, student_pk, period_pk):
@@ -346,6 +380,7 @@ def _report_card_context(request, student_pk, period_pk):
     percentages = []
     scale_lines = None
     columns = []  # ordered, unique component names across the pupil's sheets
+    column_maxes = {}
     for sheet in sheets:
         result = sheet.results.filter(student=pupil).first()
         score_map = {
@@ -353,6 +388,10 @@ def _report_card_context(request, student_pk, period_pk):
             for score in
             sheet.scores.filter(student=pupil).select_related("component")
         }
+        for entry in sheet.weights_snapshot or []:
+            if entry["name"] not in columns:
+                columns.append(entry["name"])
+                column_maxes[entry["name"]] = entry["max_score"]
         subject_rows.append({
             "sheet": sheet,
             "lines": [
@@ -362,9 +401,6 @@ def _report_card_context(request, student_pk, period_pk):
             "score_map": score_map,
             "result": result,
         })
-        for entry in sheet.weights_snapshot or []:
-            if entry["name"] not in columns:
-                columns.append(entry["name"])
         if result:
             percentages.append(result.percentage)
             if not scale_lines and result.scale_snapshot:
@@ -379,12 +415,98 @@ def _report_card_context(request, student_pk, period_pk):
         # cells[i] matches columns[i]: a (max_score, value) pair or None
         row["cells"] = [row["score_map"].get(name) for name in columns]
 
+    # The brightest grade gets the green chip, next teal, next amber,
+    # everything later neutral — the colour follows the grade's place in the
+    # school's own scale, not a hard-coded letter.
+    columns_info = [{"name": name, "max": column_maxes[name]} for name in columns]
+    if scale_lines:
+        mins = [Decimal(str(line["min_percent"])) for line in scale_lines]
+        for line in scale_lines:
+            value = Decimal(str(line["min_percent"]))
+            higher = [m for m in mins if m > value]
+            line["min_percent"] = value
+            line["top_percent"] = min(higher) - 1 if higher else Decimal("100")
+            if line["top_percent"] < value:
+                line["top_percent"] = value
+        ordered = sorted(scale_lines, key=lambda line: -line["min_percent"])
+        chip_class = {0: "ok", 1: "tl", 2: "wa"}
+        chip_map = {
+            line["grade"]: chip_class.get(index, "ne")
+            for index, line in enumerate(ordered)
+        }
+    else:
+        chip_map = {}
+    for row in subject_rows:
+        row["chip"] = chip_map.get(row["result"].grade, "ne") if row["result"] else None
+
+    show_ranking = request.school.show_ranking
+    class_position = None
+    if show_ranking:
+        for row in subject_rows:
+            result = row["result"]
+            if result is None:
+                row["position"] = None
+                continue
+            peer_percentages = list(
+                row["sheet"].results.exclude(student=pupil)
+                .values_list("percentage", flat=True)
+            )
+            row["position"] = _rank(peer_percentages, result.percentage)
+        peer_means = [
+            entry["avg"]
+            for entry in SubjectResult.objects.filter(sheet__in=sheets)
+            .values("student_id").annotate(avg=Avg("percentage"))
+            if entry["student_id"] != pupil.pk
+        ]
+        class_position = (
+            f"{_rank(peer_means, average)} of {len(peer_means) + 1}"
+            if peer_means and average is not None
+            else None
+        )
+
+    scored = [(row["sheet"], row["result"]) for row in subject_rows if row["result"]]
+    total_score = sum((result.total for _, result in scored), Decimal("0"))
+    total_max = sum((_sheet_max_total(sheet) for sheet, _ in scored), Decimal("0"))
+
+    attendance = None
+    if pupil.current_class_id is not None:
+        records = AttendanceRecord.objects.for_school(request.school).filter(
+            student=pupil,
+            register__session=period.session,
+            register__school_class=pupil.current_class,
+            register__date__gte=period.start_date,
+            register__date__lte=period.end_date,
+        )
+        section_q = Q(register__section__isnull=True)
+        if pupil.current_section_id:
+            section_q |= Q(register__section=pupil.current_section)
+        records = records.filter(section_q)
+        attendance = {
+            "present": records.exclude(status="absent").count(),
+            "days": records.count(),
+        }
+
+    next_term = (
+        AcademicPeriod.objects.for_school(request.school)
+        .filter(session=period.session, start_date__gt=period.end_date)
+        .order_by("start_date", "id")
+        .first()
+    )
+
     return {
         "pupil": pupil,
         "period": period,
         "subject_rows": subject_rows,
         "columns": columns,
+        "columns_info": columns_info,
+        "column_maxes": column_maxes,
         "average": average,
         "scale_lines": scale_lines,
+        "show_ranking": show_ranking,
+        "class_position": class_position,
+        "total_score": total_score,
+        "total_max": total_max,
+        "attendance": attendance,
+        "next_term": next_term,
         "today": timezone.localdate(),
     }
