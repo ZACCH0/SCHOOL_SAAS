@@ -2,14 +2,12 @@
 
 Single source of truth for where the project stands. Rules for updating it are in `AGENTS.md` section 9.
 
-**Last updated:** 2026-10-30 (parent portal CLOSED; all work pushed to GitHub `a9ca2f3`)
-**Current phase:** Parent portal P1–P3 COMPLETE and owner-tested: My children page, office parent accounts, child page (results + fees), report card HTML + PDF for parents, PDF signature labels enlarged after owner feedback. Grade-column template bug found live and fixed. 376 tests passing; everything pushed.
-**Current task:** Session ended here. Resume fresh next time.
+**Last updated:** 2026-10-30 (report card 2.0: ranking, totals, attendance + matching HTML design; commit `de606ef` pushed)
+**Current phase:** Parent portal P1–P3 COMPLETE. Report card upgraded: PDF redesigned to the updated design canvas (Public Sans, teal band, details card, totals/position/average strip, write-in rows, signature boxes) with class ranking behind a per-school toggle (`School.show_ranking`), total score per subject, term attendance count and next-term start date; motto field added. The HTML report card page was rebuilt to mirror the PDF. 381 tests passing.
+**Current task:** OWNER to browser-verify the HTML report card restyle (DONE unverified). Signature boxes stay as placeholders for now — owner chose hand-signing on print, digital signature upload deferred to the T20 file-storage work.
 **Next task:** OWNER CHOOSE: T14 dashboards/announcements/timetable · T7e login by phone/email · T7d admin password reset (no-email users) · T11 admissions · T20 profile photos. Dev data note: 72 placeholder pupils, all 11 Primary 1 A subjects published (real workflow), Primary 3 drafts untouched; parent1/Parent@1 linked to Esther (FSS/2026/001, has results) and Aishat (FSS/2026/003, no results yet by design).
 
-## Task board
-
-Statuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
+## Task boardStatuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 
 | ID | Task | Status | Evidence |
 |---|---|---|---|
@@ -28,7 +26,7 @@ Statuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 | T9 | Students and parents (parent with many children, history across promotions) | DONE (verified by owner) | T9a data model, T9b services, T9c pages. 199 tests passed; owner consulted on admission numbers: manual entry stays, no auto-numbering for now |
 | T10 | Attendance | DONE (unverified by owner in browser) | T10a model, T10b services, T10c pages. 227 tests passed on 2026-10-26; tenant isolation, role matrix, audit and read-only history covered |
 | T11 | Admissions | TODO | |
-| T12 | Assessments, results, grading, workflow, report cards (PDF) | DONE (verified) | T12a verified 2026-10-28; T12b/c workflow + notifications verified in browser (send-back earlier, submit/review/approve/publish 2026-10-29); T12d PDF verified ("cool"). 345 tests passed. Ranking (per-school toggle) intentionally deferred |
+| T12 | Assessments, results, grading, workflow, report cards (PDF) | DONE (verified) | T12a verified 2026-10-28; T12b/c workflow + notifications verified in browser; T12d PDF verified; T12e ranking/totals/attendance built 2026-10-30 (HTML restyle unverified). 381 tests passed |
 | T13 | Finance: fee structures, invoices, payments, receipts, balances | DONE (unverified by owner in browser) | T13a model, T13b services, T13c pages. 257 tests passed on 2026-10-26; idempotent payments, no overpay, audit, tenant isolation |
 | T14 | Dashboards, announcements, notifications, timetable | TODO | |
 | T15 | Documents, analytics, audit log | TODO | |
@@ -51,6 +49,20 @@ Statuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 | P3 | Parent portal step 3: report card HTML + PDF for linked parents | DONE (verified) | Owner opened/downloaded the PDF from the portal; label size fixed on their feedback. 20 portal tests; 376 passed |
 
 ## Task log (newest first)
+
+### Report card 2.0: ranking, totals, attendance + matching HTML design (2026-10-30, 381 passed)
+- Owner reported the "Open full report card" HTML page looked different from the downloaded PDF — only the PDF had been redesigned. This task closes that gap
+- **New School fields** (migration `schools.0003`, applied): `motto` (shown on report cards) and `show_ranking` (per-school toggle, the deferred ranking decision; default False, admin field label "show positions on report cards")
+- **PDF redesigned** (`templates/results/report_card_pdf.html`) to the updated design canvas: Public Sans vendored to `static/fonts/` (regular/semibold/bold, `@font-face`; WeasyPrint gets `base_url=static/` so relative font paths resolve), teal top band, logo box + school block (with motto) + photo box masthead, "TERMINAL REPORT SHEET" title band, pupil details card (name, class, session, term, admission no., attendance, next-term start date), subjects table with per-component `/max` headers, summary strip (total score / average / position in class / promoted-to blank line), write-in rows (conduct/attitude/interest, teacher/head/parent remarks), signature boxes (placeholders — owner chose hand-signing for now; upload deferred to T20), grading-scale footer with ranges
+- **View additions** (`_report_card_context`, shared by HTML + PDF so they cannot drift):
+  - `_rank` + `_ordinal`: standard competition ranking (ties share a position: 90/75/75/61 → 1st, 2nd, 2nd, 4th), drive-by peer percentages from published SubjectResults
+  - subject `total_max` from the `weights_snapshot` maxes; grand `total_score`/`total_max` across published subjects
+  - attendance = present days of the pupil for the period from AttendanceSession/AttendanceRecord (own class, section registers only; other classes never count)
+  - `next_term` = the session's next period by start date; grade chips mapped from the school's own scale (top grade green, then teal, then amber, else neutral — colour follows the scale, never a hard-coded letter)
+- **HTML report card page** (`templates/results/report_card.html`) rebuilt to mirror the PDF: same masthead/details/table/strip/write-ins/signatures/footer structure in Tailwind (mobile-first, 2-col details, horizontal scroll on the table, `print:hidden` toolbar kept)
+- Tests `apps/results/test_views.py` +5: ranking with tied pairs (1st/2nd/2nd/4th, class position "x of 4"), ranking hidden when toggle off, totals 160/200 average 80.0, attendance counts only the pupil's own registers, next-term date prefill. `_manager_member` now makes unique usernames
+- Sample render exists as `report-card-sample-esther.pdf` (root, uncommitted) for the owner to view; delete after checking
+- Commit `de606ef`; `check`, `makemigrations --check`, CSS rebuild clean
 
 ### Session close (2026-10-30) — parent portal closed, everything pushed
 - Owner tested the whole portal live: parent1 dashboard → My children → child page (results with grades, fees balances) → Open full report card → Download PDF
@@ -376,7 +388,7 @@ Statuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 ## Known issues and technical debt
 - `apps/fees/views.py` keeps its own `_current_period`; the shared helpers now live in `apps/academics/selectors.py` (`session_periods`, `current_or_last_period`) — fees can switch to them in a later cleanup
 - Report-card access for teachers is one rule for now (any assignment for the pupil's class); per-subject scoped report-card access can be tightened if the owner wants it
-- Report card shows the mean of subject percentages; class position/ranking is a per-school toggle planned for later
+- Report card shows the mean of subject percentages; class position/ranking is now built behind `School.show_ranking` (default off; owner can enable per school in admin)
 - Login attempt limiting arrives with H2; proxy IP settings still to be set at deployment
 - Platform super admin has no dedicated permission helper or screens; uses Django admin
 - `bulk_create()` and `.update()` skip `AcademicPeriod.clean()`; use normal saves or forms
