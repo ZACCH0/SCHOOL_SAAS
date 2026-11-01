@@ -7,6 +7,7 @@ class User(AbstractUser):
     """Platform user. Username login; email and phone are optional."""
 
     phone = models.CharField(max_length=20, blank=True)
+    must_change_password = models.BooleanField(default=False, db_index=True)
 
     def __str__(self):
         return self.get_full_name() or self.username

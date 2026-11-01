@@ -1,6 +1,8 @@
 from django.contrib.auth import views as auth_views
 from django.urls import path, reverse_lazy
 
+from . import views
+
 app_name = "accounts"
 urlpatterns = [
     path(
@@ -12,6 +14,8 @@ urlpatterns = [
         name="login",
     ),
     path("logout/", auth_views.LogoutView.as_view(), name="logout"),
+    path("force-change/", views.force_change, name="force_change"),
+    path("members/<int:pk>/reset-password/", views.member_password_reset, name="member_password_reset"),
     path(
         "password-reset/",
         auth_views.PasswordResetView.as_view(
