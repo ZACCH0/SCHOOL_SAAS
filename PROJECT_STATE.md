@@ -2,10 +2,10 @@
 
 Single source of truth for where the project stands. Rules for updating it are in `AGENTS.md` section 9.
 
-**Last updated:** 2026-10-30 (T7d admin password reset adopted from an earlier session, fixed, committed `52a3727`; 389 tests passing)
-**Current phase:** Report card 2.0 fully owner-verified. T12/T13 done, parent portal done. T7d now built + committed (DONE unverified in browser): owner/admin can reset any member's password from a small "Reset password" button (currently on the Parents list), user gets a readable temporary password and is flagged `must_change_password`; a new `ForcePasswordChangeMiddleware` keeps flagged users on the change page until a strong new password is set. Bug fixed during adoption: two tests used a stale in-memory user instance after `reset_password` re-fetched it (`refresh_from_db()` before `force_login`).
-**Current task:** T11 Admissions design agreed with owner, build next.
-**Next task:** T11 Admissions (module 4 of the Requirements.md build order). PROPOSED design, owner to approve: scope = internal applicant pipeline only (public online form stays FUTURE with T21); plan = T11a Applicant model + tenant-isolation tests → T11b services (add, review, admit/decline, convert to student) → T11c office pages. Dev data note: 72 placeholder pupils, all 11 Primary 1 A subjects published, Primary 3 drafts untouched; parent1/Parent@1 linked to Esther (FSS/2026/001) and Aishat (FSS/2026/003).
+**Last updated:** 2026-10-30 (T11a Applicant model committed `fe70a0d`; 396 tests passing)
+**Current phase:** Working through T11 Admissions in owner-approved shape: internal pipeline only (public form FUTURE with T21), auto references APP-xxxx per school, 5 statuses (applied → reviewed → admitted / declined → converted).
+**Current task:** T11b Admissions services (add applicant, review, admit/decline, convert to student).
+**Next task:** T11b services — `apps/admissions/services.py`: `create_applicant` (owner/admin; auto APP-number like `_next_invoice_number`), `review_applicant`, `decide_applicant` (admit/decline), `convert_applicant` (creates Student with the office-typed admission number + class history row; marks CONVERTED with converted_student link). All role-guarded, school from request, `ensure_owned`, audited. Then T11c pages + nav. Dev data note: 72 placeholder pupils, all 11 Primary 1 A subjects published, Primary 3 drafts untouched; parent1/Parent@1 linked to Esther (FSS/2026/001) and Aishat (FSS/2026/003).
 
 ## Task boardStatuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 
@@ -25,7 +25,7 @@ Single source of truth for where the project stands. Rules for updating it are i
 | T8 | Classes, sections, levels (Primary/JSS/SS activatable), subjects, class subjects, teacher assignments per session, class teacher | DONE (unverified by owner in browser) | T8a DONE (verified, 118 passed). T8b-1 services DONE (verified, 141 passed). T8b-2 views, forms, templates DONE (verified, 162 passed on 2026-10-26). Owner chose sections as a separate table (option A) |
 | T9 | Students and parents (parent with many children, history across promotions) | DONE (verified by owner) | T9a data model, T9b services, T9c pages. 199 tests passed; owner consulted on admission numbers: manual entry stays, no auto-numbering for now |
 | T10 | Attendance | DONE (unverified by owner in browser) | T10a model, T10b services, T10c pages. 227 tests passed on 2026-10-26; tenant isolation, role matrix, audit and read-only history covered |
-| T11 | Admissions | IN PROGRESS | Design agreed 2026-10-30 (internal pipeline; public form FUTURE). T11a model next |
+| T11 | Admissions | IN PROGRESS | T11a Applicant model DONE (committed `fe70a0d`, 396 passed): reference unique per school case-insensitive, 5-state status, converted_student link with DB rule; T11b services next |
 | T7d | Admin resets a user's password (temporary password, forced change) for users without email | DONE (unverified in browser) | Commit `52a3727`; 8 tests in apps/accounts/test_password_admin.py; 389 passed |
 | T12 | Assessments, results, grading, workflow, report cards (PDF) | DONE (verified) | T12a verified 2026-10-28; T12b/c workflow + notifications verified in browser; T12d PDF verified; T12e ranking/totals/attendance + HTML restyle approved by owner 2026-10-30. 381 tests passed |
 | T13 | Finance: fee structures, invoices, payments, receipts, balances | DONE (unverified by owner in browser) | T13a model, T13b services, T13c pages. 257 tests passed on 2026-10-26; idempotent payments, no overpay, audit, tenant isolation |
@@ -51,11 +51,27 @@ Single source of truth for where the project stands. Rules for updating it are i
 
 ## Task log (newest first)
 
+### T11a Admissions Applicant model (2026-10-30, 396 passed)
+- Owner agreed the T11 shape before build: internal applicant pipeline only (public online applications stay FUTURE with T21), auto references `APP-0001`-style per school, 5 workflow states
+- New app `apps/admissions` in INSTALLED_APPS. Model `Applicant` (ValidatedSchoolModel): reference, names, sex, optional date_of_birth and target_class (nullable at intake, needed before conversion), guardian name/phone/email, address, notes, status (applied/reviewed/admitted/declined/converted), converted_student FK (PROTECT), created/updated
+- DB rules: reference unique per school ignoring case (`Lower("reference")`), `converted_applicant_has_student` CheckConstraint (CONVERTED requires a linked student, constraint style `condition=` to dodge the deprecated `check=`); clean() rejects foreign-school target_class/converted_student; PROTECT everywhere
+- Admin registered (school/status filters, reference+names search); `SchoolClassAdmin` gained `search_fields` so `autocomplete_fields` passes admin.E040
+- Side lesson recorded (stale model instances): T7d failures fixed this session came from tests holding a user instance while a service re-fetched + saved it — remember to refresh before re-login in tests
+- Tests `apps/admissions/tests.py` (7): default status, case-insensitive reference uniqueness per school, tenant isolation by id, foreign target_class/converted_student rejected, converted-without-student IntegrityError, link kept
+- Migrations `admissions.0001_initial` applied. Commit `fe70a0d`; `check`, `makemigrations --check` clean
+
 ### Report card 2.0 HTML restyle approved by owner (2026-10-30)
 - Owner browser-verified the rebuilt HTML report card (masthead, details card, subjects table, totals/position/average strip, write-ins, signature placeholders, grading footer) and approved it — report card 2.0 is now fully DONE (verified)
 - `report-card-sample-esther.pdf` deleted from the project root after approval
 - No code changes; docs only
 - Commit: `docs: owner approved report card 2.0 HTML restyle`
+
+### T7d adopted from an earlier session: admin password reset + forced change (2026-10-30, 389 passed)
+- Uncommitted T7d work was already in the working tree from an earlier session; owner chose "test then commit" before T11 started
+- Scope landed: `User.must_change_password` (indexed BooleanField, migration `accounts.0002`); `apps/accounts/services.py` `reset_password(request, membership)` — owner/admin only, generates a readable 12-char temporary password (no 0/O/1/l/I so it survives being typed from paper), sets the flag, audits `accounts.password_reset` WITHOUT the password; view `member_password_reset` on the Parents list (POST-only, audit, safe `next` redirect); POST-only force-change page `accounts:force-change/` with `SetPasswordForm`, clears the flag after a strong password, audited `accounts.password_changed`; `ForcePasswordChangeMiddleware` after AuthenticationMiddleware keeps flagged users on the change page (logout + static exempt)
+- Two failing tests fixed: they force-logged-in a STALE user instance carrying the pre-reset password attribute while the service had re-fetched and saved the user (`refresh_from_db` before `force_login`); the app logic was never wrong — a password reset SHOULD invalidate existing sessions. Debug prints removed from the middleware
+- Tests `apps/accounts/test_password_admin.py` (8): temp password works + old one dead, audit without the password, admin may reset / teacher + bursar 403, foreign membership 404, flagged user kept on the change page, full flow (weak refused / strong accepted / flag cleared), mismatch changes nothing, anonymous → login
+- Commit `52a3727`; suite 389 passed at the time, `check`/`makemigrations --check` clean
 
 ### Report card 2.0: ranking, totals, attendance + matching HTML design (2026-10-30, 381 passed)
 - Owner reported the "Open full report card" HTML page looked different from the downloaded PDF — only the PDF had been redesigned. This task closes that gap
