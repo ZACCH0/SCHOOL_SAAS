@@ -11,6 +11,7 @@ class LevelAdmin(admin.ModelAdmin):
 class SchoolClassAdmin(admin.ModelAdmin):
     list_display = ("name", "school", "level", "order", "is_active")
     list_filter = ("school", "level", "is_active")
+    search_fields = ("name",)
 
 @admin.register(Section)
 class SectionAdmin(admin.ModelAdmin):
