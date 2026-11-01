@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Admissions{% endblock %}
+
+{% block content %}
+  {% url 'admissions:create' as new_url %}
+  {% include "components/page_header.html" with title="Admissions" subtitle="Applications from families who want to join the school." action_url=new_url action_label="Add applicant" %}
+  <form method="get" class="mb-4 flex flex-wrap gap-2">
+    <input type="text" name="q" value="{{ query }}" placeholder="Search name, reference or guardian"
+           class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-ink">
+    <select name="status" class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-ink">
+      <option value="">Any status</option>
+      <option value="applied" {% if chosen_status == 'applied' %}selected{% endif %}>Applied</option>
+      <option value="reviewed" {% if chosen_status == 'reviewed' %}selected{% endif %}>Reviewed</option>
+      <option value="admitted" {% if chosen_status == 'admitted' %}selected{% endif %}>Admitted</option>
+      <option value="declined" {% if chosen_status == 'declined' %}selected{% endif %}>Declined</option>
+      <option value="converted" {% if chosen_status == 'converted' %}selected{% endif %}>Enrolled</option>
+    </select>
+    <button class="rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white">Filter</button>
+  </form>
+  {% if page_obj.object_list %}
+    <div class="overflow-x-auto rounded-2xl bg-white shadow-sm ring-1 ring-line">
+      <table class="w-full text-left text-sm">
+        <thead class="border-b border-line bg-slate-50 text-xs uppercase text-slate-500">
+          <tr>
+            <th class="px-4 py-3">Reference</th>
+            <th class="px-4 py-3">Name</th>
+            <th class="px-4 py-3">Class applied for</th>
+            <th class="px-4 py-3">Guardian</th>
+            <th class="px-4 py-3">Status</th>
+            <th class="px-4 py-3"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for applicant in page_obj.object_list %}
+            <tr class="border-b border-line">
+              <td class="px-4 py-3 font-semibold">{{ applicant.reference }}</td>
+              <td class="px-4 py-3">{{ applicant.last_name }}, {{ applicant.first_name }}</td>
+              <td class="px-4 py-3">{{ applicant.target_class|default:"-" }}</td>
+              <td class="px-4 py-3">{{ applicant.guardian_name|default:"-" }}</td>
+              <td class="px-4 py-3">
+                {% if applicant.status == "admitted" %}
+                  {% include "components/status_chip.html" with kind="ok" label="Admitted" %}
+                {% elif applicant.status == "declined" %}
+                  {% include "components/status_chip.html" with kind="bad" label="Declined" %}
+                {% elif applicant.status == "converted" %}
+                  {% include "components/status_chip.html" with kind="ok" label="Enrolled" %}
+                {% else %}
+                  {% include "components/status_chip.html" with kind="neutral" label=applicant.status %}
+                {% endif %}
+              </td>
+              <td class="px-4 py-3 text-right">
+                <a class="font-semibold text-brand-700" href="{% url 'admissions:detail' applicant.pk %}">Open</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% include "components/pagination.html" %}
+  {% else %}
+    {% include "components/empty_state.html" with title="No applications" text="Record a family's application or change the filters." action_url=new_url action_label="Add applicant" %}
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}{{ applicant.reference }} — Admissions{% endblock %}
+
+{% block content %}
+  {% url 'admissions:list' as list_url %}
+  {% include "components/page_header.html" with title=applicant.reference subtitle=applicant.get_status_display action_url=list_url action_label="Back to applications" %}
+
+  <div class="grid gap-4 lg:grid-cols-2">
+    <div class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-line">
+      <h2 class="mb-3 text-sm font-semibold uppercase text-slate-500">Applicant</h2>
+      <dl class="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+        <dt class="text-slate-500">Name</dt>
+        <dd class="font-semibold">{{ applicant.last_name }}, {{ applicant.first_name }}{% if applicant.middle_name %} {{ applicant.middle_name }}{% endif %}</dd>
+        <dt class="text-slate-500">Sex</dt><dd>{{ applicant.get_sex_display }}</dd>
+        <dt class="text-slate-500">Date of birth</dt>
+        <dd>{{ applicant.date_of_birth|default:'- not given yet -' }}</dd>
+        <dt class="text-slate-500">Class applied for</dt>
+        <dd>{{ applicant.target_class|default:'- not chosen yet -' }}</dd>
+        <dt class="text-slate-500">Guardian</dt>
+        <dd>{{ applicant.guardian_name|default:'-' }}{% if applicant.guardian_phone %} · {{ applicant.guardian_phone }}{% endif %}{% if applicant.guardian_email %} · {{ applicant.guardian_email }}{% endif %}</dd>
+        <dt class="text-slate-500">Address</dt><dd>{{ applicant.address|default:'-' }}</dd>
+        <dt class="text-slate-500">Notes</dt><dd>{{ applicant.notes|default:'-' }}</dd>
+      </dl>
+    </div>
+
+    <div class="space-y-4">
+      {% if applicant.status == "converted" %}
+        <div class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-line">
+          <h2 class="mb-3 text-sm font-semibold uppercase text-slate-500">Enrolled</h2>
+          <p class="text-sm text-slate-600">
+            This applicant became a student:
+            <a class="font-semibold text-brand-700" href="/students/{{ applicant.converted_student.pk }}/">
+              {{ applicant.converted_student }} ({{ applicant.converted_student.admission_number }})
+            </a>
+          </p>
+        </div>
+      {% endif %}
+
+      {% if applicant.status == "applied" %}
+        <form method="post" action="{% url 'admissions:review' applicant.pk %}" class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-line">
+          {% csrf_token %}
+          <h2 class="mb-3 text-sm font-semibold uppercase text-slate-500">Mark as reviewed</h2>
+          {% include "components/form_field.html" with field=review_form.notes %}
+          <button class="mt-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700">Review</button>
+        </form>
+      {% endif %}
+
+      {% if applicant.status == "reviewed" %}
+        <form method="post" action="{% url 'admissions:decide' applicant.pk %}" class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-line">
+          {% csrf_token %}
+          {{ decide_form.decision }}
+          <h2 class="mb-3 text-sm font-semibold uppercase text-slate-500">Decision</h2>
+          {% include "components/form_field.html" with field=decide_form.notes %}
+          <div class="mt-2 flex gap-3">
+            <button type="submit" name="decision" value="admit" class="rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700">Admit</button>
+            <button type="submit" name="decision" value="decline" class="rounded-lg border border-line bg-white px-4 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-50">Decline</button>
+          </div>
+        </form>
+      {% endif %}
+
+      {% if applicant.status == "admitted" %}
+        <div class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-line">
+          <h2 class="mb-3 text-sm font-semibold uppercase text-slate-500">Enrolment</h2>
+          <a href="{% url 'admissions:convert' applicant.pk %}"
+             class="rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700">Enrol this applicant</a>
+          <p class="mt-3 text-sm text-slate-500">You will type the student's admission number and section; history follows the normal flow.</p>
+        </div>
+      {% endif %}
+
+      {% if applicant.status == "declined" %}
+        <div class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-line">
+          <p class="text-sm text-slate-600">Application declined. The record stays for the school's archives.</p>
+        </div>
+      {% endif %}
+      <div></div>
+    </div>
+  </div>
+{% endblock %}
