@@ -2,10 +2,10 @@
 
 Single source of truth for where the project stands. Rules for updating it are in `AGENTS.md` section 9.
 
-**Last updated:** 2026-10-30 (T11b admissions services committed `7eb0eba`; 406 tests passing)
-**Current phase:** Working through T11 Admissions: internal pipeline only (public form FUTURE with T21), auto references APP-xxxx per school, 5 statuses (applied → reviewed → admitted / declined → converted).
-**Current task:** T11c Admissions pages ( Applicants list with status filters + Add applicant; applicant detail with review/admit/decline actions and notes; conversion form asking for the student admission number (+ optional section); nav entry "Admissions" for owner/admin). All school-scoped, thin views over the services.
-**Next task:** Owner browser-verify T11c, then tick module 4 in Requirements.md; after that, next per the build order is T14 dashboards/announcements/timetable (or T7e login by phone/email / T20 photos). Dev data note: 72 placeholder pupils, all 11 Primary 1 A subjects published, Primary 3 drafts untouched; parent1/Parent@1 linked to Esther (FSS/2026/001) and Aishat (FSS/2026/003).
+**Last updated:** 2026-11-01 (T11c admissions pages committed `170ca17`; 415 tests passing)
+**Current phase:** T11 Admissions fully built (internal pipeline, auto APP-xxxx references, 5 statuses): model + services + office pages. Owner to browser-verify the module now.
+**Current task:** OWNER to browser-verify T11 (DONE unverified): Admissions → Add applicant (APP-0001 auto) → detail → Review (notes) → Admit or Decline → "Enrol this applicant" (type the student admission number + section) → pupil appears in Students. Check teacher/bursar get 403 and the sidebar "Admissions" entry shows only for owner/admin.
+**Next task:** Requirements.md module 4 ticks after verification; next module per build order is T14 dashboards/announcements/timetable (alternatives: T7e login by phone/email · T20 profile photos · T21/T7e stay later). Dev data note: 72 placeholder pupils, all 11 Primary 1 A subjects published; parent1/Parent@1 linked to Esther (FSS/2026/001) and Aishat (FSS/2026/003).
 
 ## Task boardStatuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 
@@ -25,7 +25,7 @@ Single source of truth for where the project stands. Rules for updating it are i
 | T8 | Classes, sections, levels (Primary/JSS/SS activatable), subjects, class subjects, teacher assignments per session, class teacher | DONE (unverified by owner in browser) | T8a DONE (verified, 118 passed). T8b-1 services DONE (verified, 141 passed). T8b-2 views, forms, templates DONE (verified, 162 passed on 2026-10-26). Owner chose sections as a separate table (option A) |
 | T9 | Students and parents (parent with many children, history across promotions) | DONE (verified by owner) | T9a data model, T9b services, T9c pages. 199 tests passed; owner consulted on admission numbers: manual entry stays, no auto-numbering for now |
 | T10 | Attendance | DONE (unverified by owner in browser) | T10a model, T10b services, T10c pages. 227 tests passed on 2026-10-26; tenant isolation, role matrix, audit and read-only history covered |
-| T11 | Admissions | IN PROGRESS | T11a model done (`fe70a0d`); T11b services done (`7eb0eba`, 406 passed): create/review/decide/convert, workflow order enforced, conversion builds a real Student via the students service with history row; T11c pages next |
+| T11 | Admissions | DONE (unverified in browser) | T11a model `fe70a0d`, T11b services `7eb0eba`, T11c pages `170ca17`; 26 admissions tests, 415 suite passed |
 | T7d | Admin resets a user's password (temporary password, forced change) for users without email | DONE (unverified in browser) | Commit `52a3727`; 8 tests in apps/accounts/test_password_admin.py; 389 passed |
 | T12 | Assessments, results, grading, workflow, report cards (PDF) | DONE (verified) | T12a verified 2026-10-28; T12b/c workflow + notifications verified in browser; T12d PDF verified; T12e ranking/totals/attendance + HTML restyle approved by owner 2026-10-30. 381 tests passed |
 | T13 | Finance: fee structures, invoices, payments, receipts, balances | DONE (unverified by owner in browser) | T13a model, T13b services, T13c pages. 257 tests passed on 2026-10-26; idempotent payments, no overpay, audit, tenant isolation |
@@ -50,6 +50,15 @@ Single source of truth for where the project stands. Rules for updating it are i
 | P3 | Parent portal step 3: report card HTML + PDF for linked parents | DONE (verified) | Owner opened/downloaded the PDF from the portal; label size fixed on their feedback. 20 portal tests; 376 passed |
 
 ## Task log (newest first)
+
+### T11c Admissions pages (2026-11-01, 415 passed)
+- New `apps/admissions/forms.py`: ApplicantForm (school-scoped class choices), ReviewForm/DecideForm (optional note; decision as hidden value from the admit/decline buttons), ConvertForm (admission number + section list limited to the target class)
+- Views (all `role_required(owner, admin)`, school from request, `get_for_school_or_404`): list with search (name/reference/guardian) + status filter + pagination (25/page), create page reusing `form_page.html`, detail page whose action cards follow the status (review → decide → enrol → enrolled link to the Student / declined note), POST review, POST decide, GET+POST convert (thin over the T11b service; duplicate admission number keeps the applicant ADMITTED and rejects cleanly)
+- URLs `admissions/...` (list/create/detail/review/decide/convert), nav "Admissions" for owner+admin only
+- Tests `apps/admissions/test_views.py` (9): anonymous → login, teacher/bursar/parent 403, tenant isolation (foreign applicant list-hidden and detail 404), create assigns APP-0001 + audit, validation error stays on form, status-driven detail actions, admit → convert → student created + applicant converted, decline hides enrol, foreign manager gets 404 on review/decide with no audit
+- Bugs caught along the way: view read `cleaned_data` before `is_valid()` (AttributeError on empty submit) — fixed by relying on Django's required-field error; test helpers default to TEACHER role (403s) — explicit `role="owner"` now
+- CSS rebuilt (new templates compiled). `check` + `makemigrations --check` clean
+- Commit `170ca17`
 
 ### T11b Admissions services (2026-10-30, 406 passed)
 - `apps/admissions/services.py`: `create_applicant` (owner/admin; APP reference auto like invoices with a count fallback for non-numeric tails), `review_applicant` (applied → reviewed, optional notes), `decide_applicant` (reviewed → admitted/declined, audited with the decision), `convert_applicant` (admitted → converted; refuses missing target class or date of birth with friendly messages; creates the Student through the existing `students.create_student` service so the admission-number rule, class etc. stay one rule; class history row handled there; sets `converted_student` and audits `admissions.applicant_converted`)
