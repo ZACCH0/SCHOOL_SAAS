@@ -33,11 +33,11 @@ Types: **REQ** = product requirement, **TECH** = implementation rule, **FUTURE**
 
 ## 4. Modules (build in this order, one at a time)
 
-1. [ ] Classes, sections, levels (Primary/JSS/SS), subjects, teacher assignments
-2. [ ] Students and parents (parent with many children; history kept across promotions; statuses: active, graduated, withdrawn, suspended, transferred)
-3. [ ] Attendance (present, absent, late, excused; statistics; history)
+1. [x] Classes, sections, levels (Primary/JSS/SS), subjects, teacher assignments — DONE (verified) T8: sections as own table, teacher assignments per session, owner-verified in browser 2026-10-26
+2. [x] Students and parents (parent with many children; history kept across promotions; statuses: active, graduated, withdrawn, suspended, transferred) — DONE (verified) T9 + office parent accounts, owner-verified 2026-10-29
+3. [x] Attendance (present, absent, late, excused; statistics; history) — DONE (unverified in browser) T10 2026-10-26; form-teacher-only marking
 4. [ ] Admissions (application, review, accept/reject, admission number, convert to student)
-5. [x] Assessments and results (configurable components and grade scales; calculated totals/grades/remarks; configurable ranking) — built and owner-verified 2026-10-29; ranking built 2026-10-30 behind `School.show_ranking` (per-school toggle, HTML restyle unverified)
+5. [x] Assessments and results (configurable components and grade scales; calculated totals/grades/remarks; configurable ranking) — built and owner-verified 2026-10-29; ranking built 2026-10-30 behind `School.show_ranking` (per-school toggle, HTML restyle owner-approved 2026-10-30)
 6. [x] Result workflow: Draft, Submitted, Reviewed, Approved, Published; no silent edits after publish; audit record for changes — DONE (verified) 2026-10-29, with workflow notifications
 7. [x] Report cards (PDF) — DONE (verified) 2026-10-29 (WeasyPrint A4 terminal report); redesigned + matching HTML page 2026-10-30
 8. [x] Finance: fee structure, invoice, invoice items, payments, payment allocation, receipt, balance (full and partial payment, manual recording) — DONE (unverified in browser) 2026-10-26
