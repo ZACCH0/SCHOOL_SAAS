@@ -2,10 +2,10 @@
 
 Single source of truth for where the project stands. Rules for updating it are in `AGENTS.md` section 9.
 
-**Last updated:** 2026-10-30 (report card 2.0: ranking, totals, attendance + matching HTML design; commit `de606ef` pushed)
-**Current phase:** Parent portal P1–P3 COMPLETE. Report card upgraded: PDF redesigned to the updated design canvas (Public Sans, teal band, details card, totals/position/average strip, write-in rows, signature boxes) with class ranking behind a per-school toggle (`School.show_ranking`), total score per subject, term attendance count and next-term start date; motto field added. The HTML report card page was rebuilt to mirror the PDF. 381 tests passing.
-**Current task:** OWNER to browser-verify the HTML report card restyle (DONE unverified). Signature boxes stay as placeholders for now — owner chose hand-signing on print, digital signature upload deferred to the T20 file-storage work.
-**Next task:** OWNER CHOOSE: T14 dashboards/announcements/timetable · T7e login by phone/email · T7d admin password reset (no-email users) · T11 admissions · T20 profile photos. Dev data note: 72 placeholder pupils, all 11 Primary 1 A subjects published (real workflow), Primary 3 drafts untouched; parent1/Parent@1 linked to Esther (FSS/2026/001, has results) and Aishat (FSS/2026/003, no results yet by design).
+**Last updated:** 2026-10-30 (owner approved the HTML report card restyle — report card 2.0 fully verified)
+**Current phase:** Parent portal P1–P3 COMPLETE. Report card 2.0 fully verified by owner: PDF and HTML both match the updated design canvas (Public Sans, teal masthead, details card, totals/position/average strip, write-in rows, signature boxes), with class ranking behind a per-school toggle (`School.show_ranking`), total score per subject, term attendance count, next-term start date and motto field. 381 tests passing.
+**Current task:** DONE (verified). Owner browser-approved the HTML report card on 2026-10-30. Signature boxes stay as placeholders — owner chose hand-signing on print, digital signature upload deferred to the T20 file-storage work. Sample PDF deleted after approval.
+**Next task:** OWNER CHOOSE: T14 dashboards/announcements/timetable · T7e login by phone/email · T7d admin password reset (no-email users) · T11 admissions · T20 profile photos. Dev data note: 72 placeholder pupils, all 11 Primary 1 A subjects published (real workflow), Primary 3 drafts untouched; parent1/Parent@1 linked to Esther (FSS/2026/001, has results) and Aishat (FSS/2026/003, no results yet by design). NOTE: working tree has uncommitted in-progress T7d files in `apps/accounts` (password admin reset) — not started by this session, owner to confirm their origin before committing.
 
 ## Task boardStatuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 
@@ -26,7 +26,7 @@ Single source of truth for where the project stands. Rules for updating it are i
 | T9 | Students and parents (parent with many children, history across promotions) | DONE (verified by owner) | T9a data model, T9b services, T9c pages. 199 tests passed; owner consulted on admission numbers: manual entry stays, no auto-numbering for now |
 | T10 | Attendance | DONE (unverified by owner in browser) | T10a model, T10b services, T10c pages. 227 tests passed on 2026-10-26; tenant isolation, role matrix, audit and read-only history covered |
 | T11 | Admissions | TODO | |
-| T12 | Assessments, results, grading, workflow, report cards (PDF) | DONE (verified) | T12a verified 2026-10-28; T12b/c workflow + notifications verified in browser; T12d PDF verified; T12e ranking/totals/attendance built 2026-10-30 (HTML restyle unverified). 381 tests passed |
+| T12 | Assessments, results, grading, workflow, report cards (PDF) | DONE (verified) | T12a verified 2026-10-28; T12b/c workflow + notifications verified in browser; T12d PDF verified; T12e ranking/totals/attendance + HTML restyle approved by owner 2026-10-30. 381 tests passed |
 | T13 | Finance: fee structures, invoices, payments, receipts, balances | DONE (unverified by owner in browser) | T13a model, T13b services, T13c pages. 257 tests passed on 2026-10-26; idempotent payments, no overpay, audit, tenant isolation |
 | T14 | Dashboards, announcements, notifications, timetable | TODO | |
 | T15 | Documents, analytics, audit log | TODO | |
@@ -49,6 +49,12 @@ Single source of truth for where the project stands. Rules for updating it are i
 | P3 | Parent portal step 3: report card HTML + PDF for linked parents | DONE (verified) | Owner opened/downloaded the PDF from the portal; label size fixed on their feedback. 20 portal tests; 376 passed |
 
 ## Task log (newest first)
+
+### Report card 2.0 HTML restyle approved by owner (2026-10-30)
+- Owner browser-verified the rebuilt HTML report card (masthead, details card, subjects table, totals/position/average strip, write-ins, signature placeholders, grading footer) and approved it — report card 2.0 is now fully DONE (verified)
+- `report-card-sample-esther.pdf` deleted from the project root after approval
+- No code changes; docs only
+- Commit: `docs: owner approved report card 2.0 HTML restyle`
 
 ### Report card 2.0: ranking, totals, attendance + matching HTML design (2026-10-30, 381 passed)
 - Owner reported the "Open full report card" HTML page looked different from the downloaded PDF — only the PDF had been redesigned. This task closes that gap
