@@ -2,10 +2,10 @@
 
 Single source of truth for where the project stands. Rules for updating it are in `AGENTS.md` section 9.
 
-**Last updated:** 2026-11-01 (T11c admissions pages committed `170ca17`; 415 tests passing)
-**Current phase:** T11 Admissions fully built (internal pipeline, auto APP-xxxx references, 5 statuses): model + services + office pages. Owner to browser-verify the module now.
-**Current task:** OWNER to browser-verify T11 (DONE unverified): Admissions → Add applicant (APP-0001 auto) → detail → Review (notes) → Admit or Decline → "Enrol this applicant" (type the student admission number + section) → pupil appears in Students. Check teacher/bursar get 403 and the sidebar "Admissions" entry shows only for owner/admin.
-**Next task:** Requirements.md module 4 ticks after verification; next module per build order is T14 dashboards/announcements/timetable (alternatives: T7e login by phone/email · T20 profile photos · T21/T7e stay later). Dev data note: 72 placeholder pupils, all 11 Primary 1 A subjects published; parent1/Parent@1 linked to Esther (FSS/2026/001) and Aishat (FSS/2026/003).
+**Last updated:** 2026-11-01 (T11 Admissions owner-verified in the browser; pushed to GitHub)
+**Current phase:** Modules 1-4 hard (T8 classes/subjects, T9 students, T10 attendance, T11 admissions). Results/finance/portal done earlier. 415 tests passing.
+**Current task:** NONE — T11 closed as DONE (verified).
+**Next task:** T14 Dashboards/announcements/timetable (next un-built module in the Requirements.md build order; alternatives owner may pick: T7e login by phone/email · T20 profile photos). Dev data note: 72 placeholder pupils, all 11 Primary 1 A subjects published; parent1/Parent@1 linked to Esther (FSS/2026/001) and Aishat (FSS/2026/003).
 
 ## Task boardStatuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 
@@ -25,7 +25,7 @@ Single source of truth for where the project stands. Rules for updating it are i
 | T8 | Classes, sections, levels (Primary/JSS/SS activatable), subjects, class subjects, teacher assignments per session, class teacher | DONE (unverified by owner in browser) | T8a DONE (verified, 118 passed). T8b-1 services DONE (verified, 141 passed). T8b-2 views, forms, templates DONE (verified, 162 passed on 2026-10-26). Owner chose sections as a separate table (option A) |
 | T9 | Students and parents (parent with many children, history across promotions) | DONE (verified by owner) | T9a data model, T9b services, T9c pages. 199 tests passed; owner consulted on admission numbers: manual entry stays, no auto-numbering for now |
 | T10 | Attendance | DONE (unverified by owner in browser) | T10a model, T10b services, T10c pages. 227 tests passed on 2026-10-26; tenant isolation, role matrix, audit and read-only history covered |
-| T11 | Admissions | DONE (unverified in browser) | T11a model `fe70a0d`, T11b services `7eb0eba`, T11c pages `170ca17`; 26 admissions tests, 415 suite passed |
+| T11 | Admissions | DONE (verified by owner 2026-11-01) | T11a model `fe70a0d`, T11b services `7eb0eba`, T11c pages `170ca17`; owner walked the full pipeline live; 26 admissions tests, 415 suite passed |
 | T7d | Admin resets a user's password (temporary password, forced change) for users without email | DONE (unverified in browser) | Commit `52a3727`; 8 tests in apps/accounts/test_password_admin.py; 389 passed |
 | T12 | Assessments, results, grading, workflow, report cards (PDF) | DONE (verified) | T12a verified 2026-10-28; T12b/c workflow + notifications verified in browser; T12d PDF verified; T12e ranking/totals/attendance + HTML restyle approved by owner 2026-10-30. 381 tests passed |
 | T13 | Finance: fee structures, invoices, payments, receipts, balances | DONE (unverified by owner in browser) | T13a model, T13b services, T13c pages. 257 tests passed on 2026-10-26; idempotent payments, no overpay, audit, tenant isolation |
@@ -50,6 +50,12 @@ Single source of truth for where the project stands. Rules for updating it are i
 | P3 | Parent portal step 3: report card HTML + PDF for linked parents | DONE (verified) | Owner opened/downloaded the PDF from the portal; label size fixed on their feedback. 20 portal tests; 376 passed |
 
 ## Task log (newest first)
+
+### T11 verified by owner + day-2 close (2026-11-01)
+- Owner walked the admissions pipeline live: add → review → admit/decline → enrol with admission number — "everything works well"
+- Module 4 ticked in Requirements.md with status notes; T11 marked DONE (verified)
+- Commits this session: `52a3727` T7d password reset · `fe70a0d` T11a model · `7eb0eba` T11b services · `170ca17` T11c pages · docs commits. Pushed to GitHub
+- NEXT: T14 dashboards/announcements/timetable per the build order (owner may swap in T7e or T20)
 
 ### T11c Admissions pages (2026-11-01, 415 passed)
 - New `apps/admissions/forms.py`: ApplicantForm (school-scoped class choices), ReviewForm/DecideForm (optional note; decision as hidden value from the admit/decline buttons), ConvertForm (admission number + section list limited to the target class)
