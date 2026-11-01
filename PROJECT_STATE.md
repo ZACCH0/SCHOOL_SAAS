@@ -2,10 +2,10 @@
 
 Single source of truth for where the project stands. Rules for updating it are in `AGENTS.md` section 9.
 
-**Last updated:** 2026-10-30 (T11a Applicant model committed `fe70a0d`; 396 tests passing)
-**Current phase:** Working through T11 Admissions in owner-approved shape: internal pipeline only (public form FUTURE with T21), auto references APP-xxxx per school, 5 statuses (applied → reviewed → admitted / declined → converted).
-**Current task:** T11b Admissions services (add applicant, review, admit/decline, convert to student).
-**Next task:** T11b services — `apps/admissions/services.py`: `create_applicant` (owner/admin; auto APP-number like `_next_invoice_number`), `review_applicant`, `decide_applicant` (admit/decline), `convert_applicant` (creates Student with the office-typed admission number + class history row; marks CONVERTED with converted_student link). All role-guarded, school from request, `ensure_owned`, audited. Then T11c pages + nav. Dev data note: 72 placeholder pupils, all 11 Primary 1 A subjects published, Primary 3 drafts untouched; parent1/Parent@1 linked to Esther (FSS/2026/001) and Aishat (FSS/2026/003).
+**Last updated:** 2026-10-30 (T11b admissions services committed `7eb0eba`; 406 tests passing)
+**Current phase:** Working through T11 Admissions: internal pipeline only (public form FUTURE with T21), auto references APP-xxxx per school, 5 statuses (applied → reviewed → admitted / declined → converted).
+**Current task:** T11c Admissions pages ( Applicants list with status filters + Add applicant; applicant detail with review/admit/decline actions and notes; conversion form asking for the student admission number (+ optional section); nav entry "Admissions" for owner/admin). All school-scoped, thin views over the services.
+**Next task:** Owner browser-verify T11c, then tick module 4 in Requirements.md; after that, next per the build order is T14 dashboards/announcements/timetable (or T7e login by phone/email / T20 photos). Dev data note: 72 placeholder pupils, all 11 Primary 1 A subjects published, Primary 3 drafts untouched; parent1/Parent@1 linked to Esther (FSS/2026/001) and Aishat (FSS/2026/003).
 
 ## Task boardStatuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 
@@ -25,7 +25,7 @@ Single source of truth for where the project stands. Rules for updating it are i
 | T8 | Classes, sections, levels (Primary/JSS/SS activatable), subjects, class subjects, teacher assignments per session, class teacher | DONE (unverified by owner in browser) | T8a DONE (verified, 118 passed). T8b-1 services DONE (verified, 141 passed). T8b-2 views, forms, templates DONE (verified, 162 passed on 2026-10-26). Owner chose sections as a separate table (option A) |
 | T9 | Students and parents (parent with many children, history across promotions) | DONE (verified by owner) | T9a data model, T9b services, T9c pages. 199 tests passed; owner consulted on admission numbers: manual entry stays, no auto-numbering for now |
 | T10 | Attendance | DONE (unverified by owner in browser) | T10a model, T10b services, T10c pages. 227 tests passed on 2026-10-26; tenant isolation, role matrix, audit and read-only history covered |
-| T11 | Admissions | IN PROGRESS | T11a Applicant model DONE (committed `fe70a0d`, 396 passed): reference unique per school case-insensitive, 5-state status, converted_student link with DB rule; T11b services next |
+| T11 | Admissions | IN PROGRESS | T11a model done (`fe70a0d`); T11b services done (`7eb0eba`, 406 passed): create/review/decide/convert, workflow order enforced, conversion builds a real Student via the students service with history row; T11c pages next |
 | T7d | Admin resets a user's password (temporary password, forced change) for users without email | DONE (unverified in browser) | Commit `52a3727`; 8 tests in apps/accounts/test_password_admin.py; 389 passed |
 | T12 | Assessments, results, grading, workflow, report cards (PDF) | DONE (verified) | T12a verified 2026-10-28; T12b/c workflow + notifications verified in browser; T12d PDF verified; T12e ranking/totals/attendance + HTML restyle approved by owner 2026-10-30. 381 tests passed |
 | T13 | Finance: fee structures, invoices, payments, receipts, balances | DONE (unverified by owner in browser) | T13a model, T13b services, T13c pages. 257 tests passed on 2026-10-26; idempotent payments, no overpay, audit, tenant isolation |
@@ -50,6 +50,12 @@ Single source of truth for where the project stands. Rules for updating it are i
 | P3 | Parent portal step 3: report card HTML + PDF for linked parents | DONE (verified) | Owner opened/downloaded the PDF from the portal; label size fixed on their feedback. 20 portal tests; 376 passed |
 
 ## Task log (newest first)
+
+### T11b Admissions services (2026-10-30, 406 passed)
+- `apps/admissions/services.py`: `create_applicant` (owner/admin; APP reference auto like invoices with a count fallback for non-numeric tails), `review_applicant` (applied → reviewed, optional notes), `decide_applicant` (reviewed → admitted/declined, audited with the decision), `convert_applicant` (admitted → converted; refuses missing target class or date of birth with friendly messages; creates the Student through the existing `students.create_student` service so the admission-number rule, class etc. stay one rule; class history row handled there; sets `converted_student` and audits `admissions.applicant_converted`)
+- Shared `_advance` guard for review/decide refuses wrong states ("An applicant who is applied cannot move to admitted..."); ensure_owned on every service; audit inside the same transaction
+- Tests `apps/admissions/test_services.py` (10): creation + auto-numbering + audit, non-numeric-tail fallback, teacher/bursar refused, foreign applicant refused, full pipeline (review → admit → convert produces a real student with class history), workflow order enforced, declined never converts, class/DOB guards, duplicate admission number leaves the applicant ADMITTED and unlinked (nothing half-built), notes saved
+- Commit `7eb0eba`; `check`, `makemigrations --check` clean
 
 ### T11a Admissions Applicant model (2026-10-30, 396 passed)
 - Owner agreed the T11 shape before build: internal applicant pipeline only (public online applications stay FUTURE with T21), auto references `APP-0001`-style per school, 5 workflow states
