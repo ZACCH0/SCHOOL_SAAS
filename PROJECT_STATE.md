@@ -2,10 +2,10 @@
 
 Single source of truth for where the project stands. Rules for updating it are in `AGENTS.md` section 9.
 
-**Last updated:** 2026-10-30 (owner approved the HTML report card restyle — report card 2.0 fully verified)
-**Current phase:** Parent portal P1–P3 COMPLETE. Report card 2.0 fully verified by owner: PDF and HTML both match the updated design canvas (Public Sans, teal masthead, details card, totals/position/average strip, write-in rows, signature boxes), with class ranking behind a per-school toggle (`School.show_ranking`), total score per subject, term attendance count, next-term start date and motto field. 381 tests passing.
-**Current task:** DONE (verified). Owner browser-approved the HTML report card on 2026-10-30. Signature boxes stay as placeholders — owner chose hand-signing on print, digital signature upload deferred to the T20 file-storage work. Sample PDF deleted after approval.
-**Next task:** T11 Admissions — next un-built module in the Requirements.md section 4 build order (1-3 done, results/finance done, T14 dashboards rank after it in the checklist; REST API T17 stays near the end). Alternatives by owner's choice: T14 dashboards/announcements/timetable · T7e login by phone/email · T7d admin password reset (no-email users; files from an earlier session sit UNCOMMITTED in apps/accounts, owner to confirm before using) · T20 profile photos. Dev data note: 72 placeholder pupils, all 11 Primary 1 A subjects published (real workflow), Primary 3 drafts untouched; parent1/Parent@1 linked to Esther (FSS/2026/001, has results) and Aishat (FSS/2026/003, no results yet by design).
+**Last updated:** 2026-10-30 (T7d admin password reset adopted from an earlier session, fixed, committed `52a3727`; 389 tests passing)
+**Current phase:** Report card 2.0 fully owner-verified. T12/T13 done, parent portal done. T7d now built + committed (DONE unverified in browser): owner/admin can reset any member's password from a small "Reset password" button (currently on the Parents list), user gets a readable temporary password and is flagged `must_change_password`; a new `ForcePasswordChangeMiddleware` keeps flagged users on the change page until a strong new password is set. Bug fixed during adoption: two tests used a stale in-memory user instance after `reset_password` re-fetched it (`refresh_from_db()` before `force_login`).
+**Current task:** T11 Admissions design agreed with owner, build next.
+**Next task:** T11 Admissions (module 4 of the Requirements.md build order). PROPOSED design, owner to approve: scope = internal applicant pipeline only (public online form stays FUTURE with T21); plan = T11a Applicant model + tenant-isolation tests → T11b services (add, review, admit/decline, convert to student) → T11c office pages. Dev data note: 72 placeholder pupils, all 11 Primary 1 A subjects published, Primary 3 drafts untouched; parent1/Parent@1 linked to Esther (FSS/2026/001) and Aishat (FSS/2026/003).
 
 ## Task boardStatuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 
@@ -25,7 +25,8 @@ Single source of truth for where the project stands. Rules for updating it are i
 | T8 | Classes, sections, levels (Primary/JSS/SS activatable), subjects, class subjects, teacher assignments per session, class teacher | DONE (unverified by owner in browser) | T8a DONE (verified, 118 passed). T8b-1 services DONE (verified, 141 passed). T8b-2 views, forms, templates DONE (verified, 162 passed on 2026-10-26). Owner chose sections as a separate table (option A) |
 | T9 | Students and parents (parent with many children, history across promotions) | DONE (verified by owner) | T9a data model, T9b services, T9c pages. 199 tests passed; owner consulted on admission numbers: manual entry stays, no auto-numbering for now |
 | T10 | Attendance | DONE (unverified by owner in browser) | T10a model, T10b services, T10c pages. 227 tests passed on 2026-10-26; tenant isolation, role matrix, audit and read-only history covered |
-| T11 | Admissions | TODO | |
+| T11 | Admissions | IN PROGRESS | Design agreed 2026-10-30 (internal pipeline; public form FUTURE). T11a model next |
+| T7d | Admin resets a user's password (temporary password, forced change) for users without email | DONE (unverified in browser) | Commit `52a3727`; 8 tests in apps/accounts/test_password_admin.py; 389 passed |
 | T12 | Assessments, results, grading, workflow, report cards (PDF) | DONE (verified) | T12a verified 2026-10-28; T12b/c workflow + notifications verified in browser; T12d PDF verified; T12e ranking/totals/attendance + HTML restyle approved by owner 2026-10-30. 381 tests passed |
 | T13 | Finance: fee structures, invoices, payments, receipts, balances | DONE (unverified by owner in browser) | T13a model, T13b services, T13c pages. 257 tests passed on 2026-10-26; idempotent payments, no overpay, audit, tenant isolation |
 | T14 | Dashboards, announcements, notifications, timetable | TODO | |
