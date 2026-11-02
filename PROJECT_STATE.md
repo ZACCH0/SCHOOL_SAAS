@@ -2,10 +2,10 @@
 
 Single source of truth for where the project stands. Rules for updating it are in `AGENTS.md` section 9.
 
-**Last updated:** 2026-11-01 (T11 Admissions owner-verified in the browser; pushed to GitHub)
-**Current phase:** Modules 1-4 hard (T8 classes/subjects, T9 students, T10 attendance, T11 admissions). Results/finance/portal done earlier. 415 tests passing.
-**Current task:** NONE — T11 closed as DONE (verified).
-**Next task:** T14 Dashboards/announcements/timetable (next un-built module in the Requirements.md build order; alternatives owner may pick: T7e login by phone/email · T20 profile photos). Dev data note: 72 placeholder pupils, all 11 Primary 1 A subjects published; parent1/Parent@1 linked to Esther (FSS/2026/001) and Aishat (FSS/2026/003).
+**Last updated:** 2026-11-02 (T14a announcements built and committed; full suite 437 passed)
+**Current phase:** Modules 1-4 hard (T8 classes/subjects, T9 students, T10 attendance, T11 admissions). Results/finance/portal done earlier. 437 tests passing.
+**Current task:** T14 IN PROGRESS — T14a announcements DONE (unverified in browser); T14b timetable next.
+**Next task:** T14b timetable (model + services + class timetable pages). After that T14c dashboards. T14a pages need the owner's browser check before T14 counts verified.
 
 ## Task boardStatuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 
@@ -29,7 +29,7 @@ Single source of truth for where the project stands. Rules for updating it are i
 | T7d | Admin resets a user's password (temporary password, forced change) for users without email | DONE (unverified in browser) | Commit `52a3727`; 8 tests in apps/accounts/test_password_admin.py; 389 passed |
 | T12 | Assessments, results, grading, workflow, report cards (PDF) | DONE (verified) | T12a verified 2026-10-28; T12b/c workflow + notifications verified in browser; T12d PDF verified; T12e ranking/totals/attendance + HTML restyle approved by owner 2026-10-30. 381 tests passed |
 | T13 | Finance: fee structures, invoices, payments, receipts, balances | DONE (unverified by owner in browser) | T13a model, T13b services, T13c pages. 257 tests passed on 2026-10-26; idempotent payments, no overpay, audit, tenant isolation |
-| T14 | Dashboards, announcements, notifications, timetable | TODO | |
+| T14 | Dashboards, announcements, notifications, timetable | IN PROGRESS | T14a announcements built (commit `4800bdc`), 22 tests, 437 suite; unverified in browser |
 | T15 | Documents, analytics, audit log | TODO | |
 | T16 | Security hardening (login attempt limiting, backups, file security, production settings) | TODO | |
 | T17 | REST API (only where useful) | TODO | |
@@ -50,6 +50,15 @@ Single source of truth for where the project stands. Rules for updating it are i
 | P3 | Parent portal step 3: report card HTML + PDF for linked parents | DONE (verified) | Owner opened/downloaded the PDF from the portal; label size fixed on their feedback. 20 portal tests; 376 passed |
 
 ## Task log (newest first)
+
+### T14a Announcements (2026-11-02, 437 passed)
+- New app `apps/announcements` (in INSTALLED_APPS after apps.notifications). Model `Announcement` (ValidatedSchoolModel): title, body, audience choice (everyone/staff/teachers/parents), `published_by` Membership FK (clean() refuses non owner/admin members), is_active archive flag, created/updated. Index on school+audience+is_active. Migration `announcements.0001` applied
+- Services `create_announcement` (owner/admin; creates the notice, fans notifications out to the audience's	active memberships via `notify_memberships` — publisher skipped automatically, foreign-school/inactive members receive nothing, audits `announcements.announcement_created`) and `archive_announcement` (sets is_active False, never deletes, audits `announcements.announcement_archived`)
+- Pages: `/announcements/` notice board visible to every role but FILTERED by audience (managers see all; teacher sees everyone+teachers; bursar everyone+staff; parent everyone+parents; archived never shown), pagination 25/page, audience chips, "Take down" POST button for managers; `/announcements/new/` form page (owner/admin); `/announcements/<pk>/archive/` POST-only. Nav "Announcements" for all roles
+- Tests `apps/announcements/tests.py` (5: default audience, teacher/bursar cannot publish, foreign membership rejected both directions, tenant isolation by id, admin can publish to teachers) + `test_services.py` (8: audited creation, non-manager 403 with no row saved, everyone fan-out skips publisher, audience filter, inactive/foreign members get nothing, invalid audience saves nothing, archive deactivates without deleting, foreign archive refused) + `test_views.py` (9: login wall, owner sees all, teacher/parent/bursar audience filtering, archived disappears but row kept, teacher 403 on create+archive, create posts and audits, foreign archive 404)
+- CSS rebuilt (new template compiled). `check` + `makemigrations --check` clean
+- Owner should next check the notice board in the browser (announcement board, add a notice, take it down)
+- Commit `4800bdc`
 
 ### T11 verified by owner + day-2 close (2026-11-01)
 - Owner walked the admissions pipeline live: add → review → admit/decline → enrol with admission number — "everything works well"
