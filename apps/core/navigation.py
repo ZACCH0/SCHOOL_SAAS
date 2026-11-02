@@ -22,6 +22,7 @@ PORTAL_ROLES = [Role.PARENT]
 NAV_ITEMS = [
     ("Dashboard", "core:dashboard", None),
     ("Notifications", "notifications:list", None),
+    ("Announcements", "announcements:list", None),
     ("Attendance", "attendance:home", ATTENDANCE_ROLES),
     ("Results", "results:home", RESULTS_ROLES),
     ("Students", "students:list", MANAGERS),

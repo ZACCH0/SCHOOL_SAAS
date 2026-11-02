@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     "apps.results",
     "apps.notifications",
     "apps.portal",
+    "apps.announcements",
 
 
 ]
