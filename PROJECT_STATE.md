@@ -2,10 +2,10 @@
 
 Single source of truth for where the project stands. Rules for updating it are in `AGENTS.md` section 9.
 
-**Last updated:** 2026-11-03 (nav shell rebuilt to the design canvas: sidebar + drawer + bottom bar; 440 passed)
-**Current phase:** Modules 1-4 hard complete. T14 in progress (announcements verified; timetable + dashboards next). 440 tests passing.
-**Current task:** T14 IN PROGRESS — T14a announcements DONE (verified by owner 2026-11-03); T14b timetable next.
-**Next task:** T14b timetable (model + services + class timetable pages). After that T14c dashboards.
+**Last updated:** 2026-11-03 (T14b timetable PAUSED mid-build: model done + verified, services written but 2 tests failing — see task log for exact resume steps)
+**Current phase:** Modules 1-4 hard complete. T14 in progress. Nav shell rebuilt to canvas (T19b). 437 base + 22 new timetable tests; suite momentarily 2 failing (timetable tests only, fixes identified below).
+**Current task:** T14b timetable IN PROGRESS — model DONE (11/11 tests), services WRITTEN (3 of 9 service tests failing → 2 need fixes, root causes documented).
+**Next task:** Finish T14b: (1) fix the 2 failing service tests, (2) views/forms/urls/pages, (3) nav entry, (4) CSS rebuild + full pytest + commit. THEN T14c dashboards.
 
 ## Task boardStatuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 
@@ -29,7 +29,7 @@ Single source of truth for where the project stands. Rules for updating it are i
 | T7d | Admin resets a user's password (temporary password, forced change) for users without email | DONE (unverified in browser) | Commit `52a3727`; 8 tests in apps/accounts/test_password_admin.py; 389 passed |
 | T12 | Assessments, results, grading, workflow, report cards (PDF) | DONE (verified) | T12a verified 2026-10-28; T12b/c workflow + notifications verified in browser; T12d PDF verified; T12e ranking/totals/attendance + HTML restyle approved by owner 2026-10-30. 381 tests passed |
 | T13 | Finance: fee structures, invoices, payments, receipts, balances | DONE (unverified by owner in browser) | T13a model, T13b services, T13c pages. 257 tests passed on 2026-10-26; idempotent payments, no overpay, audit, tenant isolation |
-| T14 | Dashboards, announcements, notifications, timetable | IN PROGRESS | T14a announcements verified by owner 2026-11-03 (commit `4800bdc`, 22 tests, 437 suite); T14b timetable TODO |
+| T14 | Dashboards, announcements, notifications, timetable | IN PROGRESS | T14a verified by owner 2026-11-03 (commit `4800bdc`, 22 tests, 437 suite); T14b model done, services mid-verify |
 | T15 | Documents, analytics, audit log | TODO | |
 | T16 | Security hardening (login attempt limiting, backups, file security, production settings) | TODO | |
 | T17 | REST API (only where useful) | TODO | |
@@ -51,6 +51,38 @@ Single source of truth for where the project stands. Rules for updating it are i
 | P3 | Parent portal step 3: report card HTML + PDF for linked parents | DONE (verified) | Owner opened/downloaded the PDF from the portal; label size fixed on their feedback. 20 portal tests; 376 passed |
 
 ## Task log (newest first)
+
+### T14b Timetable build IN PROGRESS — PAUSED here (2026-11-03), resume exactly from this list
+
+Owner approved the design: slot per class (optional section override), subject=None = break/assembly (label required), teacher always derived from TeacherAssignment (never stored on the slot), 7 weekdays, overlap refused.
+
+**DONE — apps/timetable model (11/11 model tests passing):**
+- New app `apps.timetable` registered in `config/settings/base.py` after `apps.announcements`
+- Model `TimetableSlot` (ValidatedSchoolModel): session (per-session config like fees/results), school_class, section (null = whole class), subject (null = break/assembly), label (required when subject is null, forbidden when a subject is set), day (WeekDay IntegerChoices 1-7), starts_at/ends_at TimeFields, is_active archive flag, created/updated
+- Rules: `clean()` runs ensure_same_school(session/class/section/subject), section-belongs-to-class, end-after-start, break-label rule, and `_refuse_overlap()` — same school+session+class+day, times overlap, is_active=True; a whole-class slot overlaps every section slot, a section slot overlaps the class-wide slot and its own section only (two sections may differ)
+- DB: unique (school, session, class, day, starts_at) + same for section, BOTH conditioned on is_active (archived slots free their exact start time but false duplicates among archived rows are possible — accepted, clean() guards all normal saves); CheckConstraint end>start; index `tt_lookup_idx`
+- Migration `timetable.0001_initial` created AND applied
+- Admin registered. Files: `models.py`, `admin.py`, `apps.py`, `tests.py` (11 tests: lesson saves, break needs label / lesson must not have one, end-after-start, occupied time refused, same times fine in other school/day, archived frees time, tenant isolation by id, foreign refs refused field by field, section-belongs-to-class, sections may differ but respect class-wide grid). Helpers `make_class`/`make_subject`/`slot` live in `apps/timetable/tests.py` and are reused by the services tests
+
+**WRITTEN, 2 TESTS STILL FAILING — apps/timetable/services.py:**
+- `create_slot(request, *, session, school_class, section=None, subject=None, label="", day, starts_at, ends_at)` — owner/admin only (MANAGE_STRUCTURE_ROLES), school always from request, friendly refusals for foreign class/section/subject, break-label rule, wraps save so overlap/duplicate surface as ValidationError; audits `timetable.slot_created` with class/day/period/subject details
+- `set_slot_active(request, slot, active)` — archive/restore, never delete; audits `timetable.slot_archived` / `timetable.slot_restored`; no-op if state already matches
+- `copy_slot_to_session(request, source_slot, *, session)` — copies a period onto another session's timetable by re-calling create_slot; ensure_owned on both source and target session
+- Test file `apps/timetable/test_services.py` (11 tests written): owner places + audit, teacher/bursar/parent refused, overlap friendly message, sections differ + stray section refused, break label through service, foreign class refused, foreign slot cannot be archived, archive→restore keeps row + 3 audit entries, archived slot frees time, copy to next session, copy refuses foreign session
+
+**THE 2 FAILURES + HOW TO FIX (verified output seen):**
+1. `test_overlap_gives_a_friendly_message` — test regex is wrong, the SERVICE IS CORRECT. Actual message: "Something already runs for this class on Monday at 09:00-09:40 (Mathematics)." → change the test to `match="already runs"`
+2. `test_archiving_then_restoring_keeps_history` — `actions()` reads `AuditLog.objects.values_list(...)` and the model orders NEWEST-FIRST (like `.latest()`), so the list comes back reversed. → change the helper in `apps/timetable/test_services.py` to `AuditLog.objects.order_by("id").values_list("action", flat=True)` (same trap as the 2026-10-28 results note: audit timestamps/ordering)
+- After fixing those two: run `pytest apps/timetable` (expect 22 passed), then the FULL suite
+
+**REMAINING FOR T14b (do in this order):**
+- Views `apps/timetable/views.py` + `forms.py` + `urls.py` (namespace `timetable`): `/timetable/` class listing (owner/admin see all; teacher sees classes they teach per the results `_my_classes` assignment rule), `/timetable/classes/<pk>/` grid page — grid by day x time with slots in order, add-slot form for owner/admin (class-scoped subject choices, optional section, optional label for breaks, day + start + end), POST new-slot, POST remove (archive) a slot; every lookup via `get_for_school_or_404`
+- Teacher display rule (agreed): the slot's teacher = TeacherAssignment for (session, class, subject) with exact section match preferred, class-wide fallback — same precedence idea as `ensure_can_edit_scores`, never a stored field
+- Nav entry "Timetable" in `apps/core/navigation.py` — recommend visible to owner/admin/teacher (ALL = None would show to bursar/parent too; decide: owner/admin/teacher only)
+- Templates `templates/timetable/home.html` + `grid.html` reusing shared components; mobile-first (bottom bar already exists)
+- Add `config/urls.py` include, CSS rebuild (`.\tailwindcss.exe -i static/src/input.css -o static/css/output.css --minify`), `python manage.py check`, `makemigrations --check --dry-run` (no new migrations expected), full `pytest`
+- Update REQUIREMENTS.md module 11 tick, PROJECT_STATE task board, commit `feat: timetable - class grids with slot rules`, push
+- THEN T14c dashboards
 
 ### T19b Nav shell rebuilt to the design canvas (2026-11-03, 440 passed)
 - Owner said the nav did not match the canvas on mobile/desktop; rebuilt `templates/base.html` from `Tablet layout.png`, `Admin dashboard.png` and `Parent app (phone).png`

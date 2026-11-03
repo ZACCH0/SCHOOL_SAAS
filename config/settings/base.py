@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     "apps.notifications",
     "apps.portal",
     "apps.announcements",
+    "apps.timetable",
 
 
 ]
