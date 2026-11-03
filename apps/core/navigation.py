@@ -11,6 +11,9 @@ ATTENDANCE_ROLES = [Role.OWNER, Role.ADMIN, Role.TEACHER]
 # Teachers enter and submit scores, so results are visible to them too.
 RESULTS_ROLES = [Role.OWNER, Role.ADMIN, Role.TEACHER]
 
+# The timetable is built by the office and read daily by teachers.
+TIMETABLE_ROLES = [Role.OWNER, Role.ADMIN, Role.TEACHER]
+
 # Finance is for the school office only (the bursar handles money).
 FEES_ROLES = [Role.OWNER, Role.ADMIN, Role.BURSAR]
 
@@ -23,6 +26,7 @@ NAV_ITEMS = [
     ("Dashboard", "core:dashboard", None),
     ("Notifications", "notifications:list", None),
     ("Announcements", "announcements:list", None),
+    ("Timetable", "timetable:home", TIMETABLE_ROLES),
     ("Attendance", "attendance:home", ATTENDANCE_ROLES),
     ("Results", "results:home", RESULTS_ROLES),
     ("Students", "students:list", MANAGERS),

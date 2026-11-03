@@ -12,7 +12,7 @@ from .tests import make_class, make_subject, slot  # reuse the model helpers
 
 
 def actions():
-    return list(AuditLog.objects.values_list("action", flat=True))
+    return list(AuditLog.objects.order_by("id").values_list("action", flat=True))
 
 
 MONDAY, TUESDAY, FRIDAY, SUNDAY = 1, 2, 5, 7
@@ -59,7 +59,7 @@ def test_overlap_gives_a_friendly_message(school_a, make_request, full):
     session, klass, maths = full
     request = make_request(school_a)
     create_slot(request, session=session, school_class=klass, subject=maths, day=MONDAY, **NINE_TO)
-    with pytest.raises(ValidationError, match="overlaps"):
+    with pytest.raises(ValidationError, match="already runs"):
         create_slot(
             request, session=session, school_class=klass,
             subject=make_subject(school_a, "English"),
