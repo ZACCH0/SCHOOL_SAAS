@@ -2,10 +2,10 @@
 
 Single source of truth for where the project stands. Rules for updating it are in `AGENTS.md` section 9.
 
-**Last updated:** 2026-11-03 (T14b timetable build complete: model + services + pages, 473 passed — owner should now walk it in the browser)
-**Current phase:** Modules 1-4 hard complete. T14 in progress. Nav shell rebuilt to canvas (T19b). 473 tests passing.
-**Current task:** T14b timetable CODE COMPLETE (DONE unverified) — awaiting owner browser check.
-**Next task:** T14c dashboards (after the owner verifies the timetable).
+**Last updated:** 2026-11-03 (T14b complete + teacher "My timetable" added same day: 476 passed — owner walks Timetable + My timetable, then T14c)
+**Current phase:** Modules 1-4 hard complete. T14 in progress. Nav shell rebuilt to canvas (T19b). 476 tests passing.
+**Current task:** T14b timetable DONE (unverified in browser) incl. per-teacher view — awaiting owner.
+**Next task:** T14c dashboards (after the owner verifies the timetable pages).
 
 ## Task boardStatuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 
@@ -51,6 +51,16 @@ Single source of truth for where the project stands. Rules for updating it are i
 | P3 | Parent portal step 3: report card HTML + PDF for linked parents | DONE (verified) | Owner opened/downloaded the PDF from the portal; label size fixed on their feedback. 20 portal tests; 376 passed |
 
 ## Task log (newest first)
+
+### Teacher "My timetable" (2026-11-03, 476 passed) — follow-up to T14b, owner request
+- Owner asked whether every teacher gets their own timetable. Answer: the office still builds the single class timetable (one source of truth, no clashes); the teacher's personal view is DERIVED. Built `/timetable/my/` (namespace `timetable:my`)
+- `my_timetable` view: a lesson slot belongs to the signed-in teacher when one of their TeacherAssignments for the current session covers it — exact-section assignment covers that section only, class-wide covers every section and the whole-class slots. Breaks are lessons-never (no subject → never "mine"); assigned slots with foreign sessions/subjects can never match
+- Page: day groups (Monday first, only days with own lessons), each row `Subject · section · Class · time range`; empty state tells the teacher their schedule appears once the office places periods on a class they teach. Home page shows a "My timetable" button for teachers (not managers)
+- Owner/admin can open the route but it is empty by design (no TEACHER assignments); bursar/parent 403
+- Tests `apps/timetable/test_views.py` +3: covered-lessons only (colleague's subject and the break absent), exact-section rule shows A but not B, another school's same-subject lesson never appears
+- Lesson kept: Subject is school-owned — school B cannot reuse school A's Subject instance in a slot; tests must create a per-school subject
+- CSS rebuilt, `check` + `makemigrations --check` clean. User action: as a teacher check Timetable → My timetable
+- Commit: `feat: teacher My timetable - own lessons derived from assignments, 3 tests`
 
 ### T14b Timetable complete (2026-11-03, 473 passed) — DONE (unverified, owner to check in browser)
 - Fixed the 2 paused service tests: overlap regex is `match="already runs"` (service wording was always correct); the archive/restore audit helper now orders by `id` (audit ties within the same second). 22/22 model+service tests pass
