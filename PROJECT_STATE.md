@@ -2,10 +2,10 @@
 
 Single source of truth for where the project stands. Rules for updating it are in `AGENTS.md` section 9.
 
-**Last updated:** 2026-11-03 (T14b timetable PAUSED mid-build: model done + verified, services written but 2 tests failing — see task log for exact resume steps)
-**Current phase:** Modules 1-4 hard complete. T14 in progress. Nav shell rebuilt to canvas (T19b). 437 base + 22 new timetable tests; suite momentarily 2 failing (timetable tests only, fixes identified below).
-**Current task:** T14b timetable IN PROGRESS — model DONE (11/11 tests), services WRITTEN (3 of 9 service tests failing → 2 need fixes, root causes documented).
-**Next task:** Finish T14b: (1) fix the 2 failing service tests, (2) views/forms/urls/pages, (3) nav entry, (4) CSS rebuild + full pytest + commit. THEN T14c dashboards.
+**Last updated:** 2026-11-03 (T14b timetable build complete: model + services + pages, 473 passed — owner should now walk it in the browser)
+**Current phase:** Modules 1-4 hard complete. T14 in progress. Nav shell rebuilt to canvas (T19b). 473 tests passing.
+**Current task:** T14b timetable CODE COMPLETE (DONE unverified) — awaiting owner browser check.
+**Next task:** T14c dashboards (after the owner verifies the timetable).
 
 ## Task boardStatuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 
@@ -29,7 +29,7 @@ Single source of truth for where the project stands. Rules for updating it are i
 | T7d | Admin resets a user's password (temporary password, forced change) for users without email | DONE (unverified in browser) | Commit `52a3727`; 8 tests in apps/accounts/test_password_admin.py; 389 passed |
 | T12 | Assessments, results, grading, workflow, report cards (PDF) | DONE (verified) | T12a verified 2026-10-28; T12b/c workflow + notifications verified in browser; T12d PDF verified; T12e ranking/totals/attendance + HTML restyle approved by owner 2026-10-30. 381 tests passed |
 | T13 | Finance: fee structures, invoices, payments, receipts, balances | DONE (unverified by owner in browser) | T13a model, T13b services, T13c pages. 257 tests passed on 2026-10-26; idempotent payments, no overpay, audit, tenant isolation |
-| T14 | Dashboards, announcements, notifications, timetable | IN PROGRESS | T14a verified by owner 2026-11-03 (commit `4800bdc`, 22 tests, 437 suite); T14b model done, services mid-verify |
+| T14 | Dashboards, announcements, notifications, timetable | IN PROGRESS | T14a verified by owner 2026-11-03 (commit `4800bdc`, 22 tests, 437 suite); T14b DONE (unverified) — 33 timetable tests, 473 suite |
 | T15 | Documents, analytics, audit log | TODO | |
 | T16 | Security hardening (login attempt limiting, backups, file security, production settings) | TODO | |
 | T17 | REST API (only where useful) | TODO | |
@@ -52,7 +52,18 @@ Single source of truth for where the project stands. Rules for updating it are i
 
 ## Task log (newest first)
 
-### T14b Timetable build IN PROGRESS — PAUSED here (2026-11-03), resume exactly from this list
+### T14b Timetable complete (2026-11-03, 473 passed) — DONE (unverified, owner to check in browser)
+- Fixed the 2 paused service tests: overlap regex is `match="already runs"` (service wording was always correct); the archive/restore audit helper now orders by `id` (audit ties within the same second). 22/22 model+service tests pass
+- Pages (`a5c343e`): `/timetable/` home — class cards with section + period counts for the CURRENT session (owners/admins see all classes; teachers only classes they have a TeacherAssignment for this session); `/timetable/classes/<pk>/` grid — day sections (Mon-Sun, only days that have slots) with rows `title · time range · section · teacher`, add-period form in a collapsible card, "Take off" per slot; `timetable:add` is a GET/POST form page; archive/restore are POST-only
+- Teacher derivation: `_teacher_names(slot)` reads TeacherAssignment for (session, class, subject) — exact section assignment preferred, class-wide fallback; never stored on the slot. Lessons with no assignment show "no teacher assigned"; breaks never show a teacher
+- Forms `SlotForm` (school/class/session fixed by view): subject choices = subjects the class takes (ClassSubject), optional section, label (cleared for lessons; required for breaks via form AND model), day, start/end times. The class's subjects come pre-filtered so an untaught subject cannot even by posted in cleanly — invalid-choice errors keep the slot count at 0
+- Nav "Timetable" for owner/admin/teacher only (bursar/parent do not see it). URLs included at `timetable/` (namespace `timetable`). All lookups via `get_for_school_or_404` / `for_school`
+- Tests: `apps/timetable/test_views.py` (11): anonymous login wall, bursar/parent 403, owner home counts, teacher sees only taught classes (grid 403 otherwise), teacher read-only (no Take off, archive POST 403), tenant isolation 404 on foreign grid + foreign slot archive/restore, owner posts lesson AND break (2 audits) but a lesson with a label / break without one are refused, untaught subject never lands, overlap friendly message, archive → empty grid → restore with audited history
+- Test-agile notes (for future module copies): TeacherAssignment requires a TEACHER-role membership (owners cannot be assigned); login signals create an audit row, so filter audit assertions by action prefix; the add-slot helper needs its own `ends_at` when `starts_at` varies
+- CSS rebuilt, `check` + `makemigrations --check` clean. Owner should next walk: sidebar Timetable → class grid → add a period → take it off
+- Commit: `feat: timetable - class grids with slot rules + pages, 11 view tests`
+
+### T14b Timetable PAUSED — resumed and finished the same day (2026-11-03)
 
 Owner approved the design: slot per class (optional section override), subject=None = break/assembly (label required), teacher always derived from TeacherAssignment (never stored on the slot), 7 weekdays, overlap refused.
 
