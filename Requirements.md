@@ -42,7 +42,7 @@ Types: **REQ** = product requirement, **TECH** = implementation rule, **FUTURE**
 7. [x] Report cards (PDF) — DONE (verified) 2026-10-29 (WeasyPrint A4 terminal report); redesigned + matching HTML page 2026-10-30
 8. [x] Finance: fee structure, invoice, invoice items, payments, payment allocation, receipt, balance (full and partial payment, manual recording) — DONE (unverified in browser) 2026-10-26
 9. [ ] Dashboards (admin, teacher, parent) using real data only
-10. [ ] Announcements and in-app notifications
+10. [ ] Announcements and in-app notifications — announcements DONE (verified in browser) 2026-11-03 (built 2026-11-02): audience notices (everyone/staff/teachers/parents), bell fan-out via notifications app, archive takedown; in-app notifications to individuals existed since the results workflow
 11. [ ] Timetable
 12. [ ] Documents with controlled access
 13. [ ] Analytics (student, academic, finance, attendance)

@@ -2,10 +2,10 @@
 
 Single source of truth for where the project stands. Rules for updating it are in `AGENTS.md` section 9.
 
-**Last updated:** 2026-11-02 (T14a announcements built and committed; full suite 437 passed)
-**Current phase:** Modules 1-4 hard (T8 classes/subjects, T9 students, T10 attendance, T11 admissions). Results/finance/portal done earlier. 437 tests passing.
-**Current task:** T14 IN PROGRESS — T14a announcements DONE (unverified in browser); T14b timetable next.
-**Next task:** T14b timetable (model + services + class timetable pages). After that T14c dashboards. T14a pages need the owner's browser check before T14 counts verified.
+**Last updated:** 2026-11-03 (T14a announcements verified by owner in browser; full suite 437 passed)
+**Current phase:** Modules 1-4 hard complete. T14 in progress (announcements verified; timetable + dashboards next). 437 tests passing.
+**Current task:** T14 IN PROGRESS — T14a announcements DONE (verified by owner 2026-11-03); T14b timetable next.
+**Next task:** T14b timetable (model + services + class timetable pages). After that T14c dashboards.
 
 ## Task boardStatuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 
@@ -29,7 +29,7 @@ Single source of truth for where the project stands. Rules for updating it are i
 | T7d | Admin resets a user's password (temporary password, forced change) for users without email | DONE (unverified in browser) | Commit `52a3727`; 8 tests in apps/accounts/test_password_admin.py; 389 passed |
 | T12 | Assessments, results, grading, workflow, report cards (PDF) | DONE (verified) | T12a verified 2026-10-28; T12b/c workflow + notifications verified in browser; T12d PDF verified; T12e ranking/totals/attendance + HTML restyle approved by owner 2026-10-30. 381 tests passed |
 | T13 | Finance: fee structures, invoices, payments, receipts, balances | DONE (unverified by owner in browser) | T13a model, T13b services, T13c pages. 257 tests passed on 2026-10-26; idempotent payments, no overpay, audit, tenant isolation |
-| T14 | Dashboards, announcements, notifications, timetable | IN PROGRESS | T14a announcements built (commit `4800bdc`), 22 tests, 437 suite; unverified in browser |
+| T14 | Dashboards, announcements, notifications, timetable | IN PROGRESS | T14a announcements verified by owner 2026-11-03 (commit `4800bdc`, 22 tests, 437 suite); T14b timetable TODO |
 | T15 | Documents, analytics, audit log | TODO | |
 | T16 | Security hardening (login attempt limiting, backups, file security, production settings) | TODO | |
 | T17 | REST API (only where useful) | TODO | |
@@ -50,6 +50,10 @@ Single source of truth for where the project stands. Rules for updating it are i
 | P3 | Parent portal step 3: report card HTML + PDF for linked parents | DONE (verified) | Owner opened/downloaded the PDF from the portal; label size fixed on their feedback. 20 portal tests; 376 passed |
 
 ## Task log (newest first)
+
+### T14a verified by owner (2026-11-03)
+- Owner confirmed the announcements board works in the browser (notice board, add notice, take down) — T14a is DONE (verified)
+- Docs only; no code changes. Next task: T14b timetable
 
 ### T14a Announcements (2026-11-02, 437 passed)
 - New app `apps/announcements` (in INSTALLED_APPS after apps.notifications). Model `Announcement` (ValidatedSchoolModel): title, body, audience choice (everyone/staff/teachers/parents), `published_by` Membership FK (clean() refuses non owner/admin members), is_active archive flag, created/updated. Index on school+audience+is_active. Migration `announcements.0001` applied
