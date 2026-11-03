@@ -49,6 +49,35 @@ def nav_for(request, membership):
         if roles is not None and membership.role not in roles:
             continue
         items.append(
-            {"label": label, "url": reverse(url_name), "active": _is_active(url_name, current)}
+            {
+                "label": label,
+                "url": reverse(url_name),
+                "name": url_name,
+                "active": _is_active(url_name, current),
+            }
         )
     return items
+
+
+# The bottom tab bar (phones and tablets) shows these shortcuts per role, in
+# NAV_ITEMS order. Every other page stays reachable through the "More" drawer.
+FAVOURITES = {
+    Role.OWNER: ("core:dashboard", "students:list", "attendance:home", "fees:home"),
+    Role.ADMIN: ("core:dashboard", "students:list", "attendance:home", "fees:home"),
+    Role.TEACHER: ("core:dashboard", "attendance:home", "results:home", "announcements:list"),
+    Role.BURSAR: ("core:dashboard", "fees:home", "notifications:list", "announcements:list"),
+    Role.PARENT: ("portal:children", "announcements:list", "notifications:list", "core:dashboard"),
+}
+
+
+def bottom_bar_for(request, membership):
+    items = nav_for(request, membership)
+    wanted = FAVOURITES.get(membership.role, ())
+    chosen = [item for item in items if item["name"] in wanted][:3]
+    if len(chosen) < 4:
+        for item in items:
+            if item not in chosen:
+                chosen.append(item)
+            if len(chosen) == 4:
+                break
+    return {"items": chosen, "more": len(items) > len(chosen)}

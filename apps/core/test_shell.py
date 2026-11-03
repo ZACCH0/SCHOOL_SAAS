@@ -72,3 +72,39 @@ def test_nav_items_respect_roles(client, teacher, school, monkeypatch):
     Membership.objects.create(user=bursar, school=school, role=Role.BURSAR)
     client.force_login(bursar)
     assert b"Money page" in client.get(reverse("core:dashboard")).content
+
+
+@pytest.mark.django_db
+def test_member_gets_bottom_bar_and_more_drawer(client, teacher):
+    client.force_login(teacher)
+    content = client.get(reverse("core:dashboard")).content
+    # Teacher has 5 allowed pages, so the bar shows 3 favourites + More.
+    assert b'aria-label="Quick navigation"' in content
+    assert b"data-nav-more" in content
+
+
+@pytest.mark.django_db
+def test_anonymous_gets_no_bottom_bar_or_menu(client):
+    content = client.get("/").content
+    assert b'aria-label="Quick navigation"' not in content
+    assert b"data-nav-more" not in content
+
+
+@pytest.mark.django_db
+def test_bottom_bar_respects_roles(client, teacher, school, monkeypatch):
+    monkeypatch.setattr(
+        "apps.core.navigation.NAV_ITEMS",
+        [
+            ("Dashboard", "core:dashboard", None),
+            ("Money page", "core:home", [Role.BURSAR]),
+        ],
+    )
+    client.force_login(teacher)
+    content = client.get(reverse("core:dashboard")).content
+    assert b"Money page" not in content
+    # Only one page allowed, so the bar has it alone and no More entry.
+    assert b"data-nav-more" not in content
+    bursar = User.objects.create_user("bursar2", password="S3cure-pass!")
+    Membership.objects.create(user=bursar, school=school, role=Role.BURSAR)
+    client.force_login(bursar)
+    assert b"Money page" in client.get(reverse("core:dashboard")).content

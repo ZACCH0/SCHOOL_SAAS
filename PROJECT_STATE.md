@@ -2,8 +2,8 @@
 
 Single source of truth for where the project stands. Rules for updating it are in `AGENTS.md` section 9.
 
-**Last updated:** 2026-11-03 (T14a announcements verified by owner in browser; full suite 437 passed)
-**Current phase:** Modules 1-4 hard complete. T14 in progress (announcements verified; timetable + dashboards next). 437 tests passing.
+**Last updated:** 2026-11-03 (nav shell rebuilt to the design canvas: sidebar + drawer + bottom bar; 440 passed)
+**Current phase:** Modules 1-4 hard complete. T14 in progress (announcements verified; timetable + dashboards next). 440 tests passing.
 **Current task:** T14 IN PROGRESS — T14a announcements DONE (verified by owner 2026-11-03); T14b timetable next.
 **Next task:** T14b timetable (model + services + class timetable pages). After that T14c dashboards.
 
@@ -42,6 +42,7 @@ Single source of truth for where the project stands. Rules for updating it are i
 | H5 | Logging to console (platform captures it) with levels from env; error alert emails come at deployment | DONE (verified) | Owner confirmed pytest works; test count not shown (94 expected). Test suite also uses a fast hasher via `config/settings/test.py` |
 | H6 | GitHub Actions running tests on every push | IN PROGRESS | Code provided |
 | T19 | UI: apply brand palette and app shell to real templates (phases U0 to U2) | DONE (verified) | U0, U1 (58 passed), U2 (68 passed). Real pages are built by the owner with OpenCode from the design canvas |
+| T19b | Nav shell rebuilt to canvas: desktop sidebar (no top bar), tablet Menu drawer, phone bottom tab bar for ALL roles | DONE (unverified in browser) | +4 tests in app shell, 440 passed |
 | T20 | Profile photos for students, teachers, parents (needs Pillow and file storage) | TODO | |
 | T21 | School public home page with gallery, news, admissions; own subdomain per school | TODO | Build after T9 to T13 |
 | P1 | Parent portal step 1: My children page (parents only, own-school links) | DONE (verified by owner 2026-10-29) | apps/portal; 8+ tests; 353 passed |
@@ -50,6 +51,17 @@ Single source of truth for where the project stands. Rules for updating it are i
 | P3 | Parent portal step 3: report card HTML + PDF for linked parents | DONE (verified) | Owner opened/downloaded the PDF from the portal; label size fixed on their feedback. 20 portal tests; 376 passed |
 
 ## Task log (newest first)
+
+### T19b Nav shell rebuilt to the design canvas (2026-11-03, 440 passed)
+- Owner said the nav did not match the canvas on mobile/desktop; rebuilt `templates/base.html` from `Tablet layout.png`, `Admin dashboard.png` and `Parent app (phone).png`
+- Desktop (md+): fixed left sidebar w-60 with brand, nav links (reuse `partials/nav_items.html` so `navigation.py` rules untouched), school/period + bell + POST logout at the bottom; NO top bar
+- Phone/tablet (<md): teal top bar with Menu button (turned white-outline over teal), platform name, bell; Menu/More opens a slide-in drawer (backdrop + Esc + close button) containing the full nav, school/period, bell and POST logout
+- Phone/tablet bottom tab bar for ALL roles: 3 role favourites + "More" (4 slots total, like the parent app canvas). Favourites per role in `apps/core/navigation.py` `FAVOURITES` + `bottom_bar_for()` (owner/admin: Dashboard/Attendance/Students; teacher: Dashboard/Attendance/Results/Announcements-order; bursar: Dashboard/Fees/Notifications; parent: My children/Notices/Alerts); fallback fills from `NAV_ITEMS` order. Context processor passes `nav_favourites` + `nav_more`
+- Drawer toggles with a 30-line inline vanilla script (no new packages); single `{% block content %}` kept (first attempt had two — caught immediately by the suite); content gains `pb-28` + `md:pl-60` so the bar/sidebar never cover content; safe-area padding for iOS
+- Non-member pages (login, school chooser) keep a plain header; logout stays POST-only everywhere
+- 4 new shell tests (bottom bar + More for a 5-item member, none for anonymous, favourites respect roles when NAV_ITEMS is monkeypatched). Live shell check: owner bottom bar = Dashboard · Attendance · Students · Notifications · More
+- CSS rebuilt. `check` + `makemigrations --check` clean. Owner should check the three layouts in the browser next
+- Commit: `feat: nav shell to canvas — desktop sidebar, tablet drawer, phone bottom bar`
 
 ### T14a verified by owner (2026-11-03)
 - Owner confirmed the announcements board works in the browser (notice board, add notice, take down) — T14a is DONE (verified)

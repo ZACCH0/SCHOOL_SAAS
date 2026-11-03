@@ -8,50 +8,164 @@
   <link rel="stylesheet" href="{% static 'css/output.css' %}">
 </head>
 <body class="min-h-screen bg-page text-ink">
-  <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:rounded focus:bg-white focus:px-3 focus:py-2">Skip to content</a>
-  <header class="border-b border-line bg-white">
-    <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-      <a href="/" class="text-lg font-semibold text-brand-700">School Platform</a>
-      <div class="flex items-center gap-4 text-sm text-slate-600">
-        {% if request.school %}
-          <span class="hidden sm:inline">
-            {{ request.school.name }}{% if current_period %} · {{ current_period.session.name }} · {{ current_period.name }}{% endif %}
-          </span>
-        {% endif %}
-        {% if user.is_authenticated %}
-          {% if request.membership %}
-            <a href="{% url 'notifications:list' %}" title="Notifications" class="relative inline-flex h-9 w-9 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-5 w-5"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" /></svg>
-              {% if unread_notifications %}
-                <span class="absolute -right-0.5 -top-0.5 min-w-[1.25rem] rounded-full bg-red-600 px-1 text-center text-[10px] font-bold leading-5 text-white">{{ unread_notifications }}</span>
-              {% endif %}
-            </a>
-          {% endif %}
-          <form method="post" action="{% url 'accounts:logout' %}">
-            {% csrf_token %}
-            <button type="submit" class="font-medium text-brand-700 hover:underline">Log out</button>
-          </form>
-        {% else %}
-          <a href="{% url 'accounts:login' %}" class="font-medium text-brand-700 hover:underline">Log in</a>
-        {% endif %}
+  <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-white focus:px-3 focus:py-2">Skip to content</a>
+
+  {% if request.membership and nav_items %}
+    {# ----- Drawer (phone + tablet, opened from the Menu button or the More tab) ----- #}
+    <button id="app-backdrop" type="button" data-nav-close aria-label="Close menu"
+            class="fixed inset-0 z-40 cursor-default bg-ink/40" hidden></button>
+    <aside id="app-drawer" aria-hidden="true"
+           class="invisible fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] -translate-x-full flex-col border-r border-line bg-white px-3 py-4 transition-transform duration-200 md:hidden">
+      <div class="flex items-center justify-between px-2">
+        <span class="text-lg font-semibold text-brand-700">School Platform</span>
+        <button type="button" data-nav-close aria-label="Close menu"
+                class="inline-flex h-11 w-11 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-5 w-5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+        </button>
       </div>
-    </div>
-  </header>
-  <div class="mx-auto max-w-6xl px-4 py-6 md:flex md:gap-6">
-    {% if request.membership %}
-      <nav aria-label="Main" class="hidden w-52 shrink-0 md:block">
+      <nav aria-label="Main" class="mt-4 flex-1 overflow-y-auto">
         {% include "partials/nav_items.html" %}
       </nav>
-    {% endif %}
-    <div class="min-w-0 flex-1">
-      {% if request.membership %}
-        <details class="mb-4 rounded-lg border border-line bg-white md:hidden">
-          <summary class="cursor-pointer px-3 py-2 text-sm font-semibold">Menu</summary>
-          <div class="border-t border-line p-2">{% include "partials/nav_items.html" %}</div>
-        </details>
-      {% endif %}
+      <div class="mt-4 border-t border-line pt-3">
+        {% if request.school %}
+          <p class="px-2 text-xs text-muted">
+            {{ request.school.name }}{% if current_period %} · {{ current_period.session.name }} · {{ current_period.name }}{% endif %}
+          </p>
+        {% endif %}
+        <div class="mt-2 flex items-center justify-between px-2">
+          <a href="{% url 'notifications:list' %}" title="Notifications"
+             class="relative inline-flex h-11 w-11 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-5 w-5"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" /></svg>
+            {% if unread_notifications %}
+              <span class="absolute right-1 top-1 min-w-[1.25rem] rounded-full bg-red-600 px-1 text-center text-[10px] font-bold leading-5 text-white">{{ unread_notifications }}</span>
+            {% endif %}
+          </a>
+          <form method="post" action="{% url 'accounts:logout' %}">
+            {% csrf_token %}
+            <button type="submit" class="text-sm font-semibold text-brand-700 hover:underline">Log out</button>
+          </form>
+        </div>
+      </div>
+    </aside>
+
+    {# ----- Top bar (phone + tablet): Menu button + platform name, per the tablet canvas ----- #}
+    <header class="sticky top-0 z-30 bg-brand-700 text-white md:hidden">
+      <div class="flex items-center justify-between gap-3 px-4 py-3">
+        <button type="button" data-nav-open aria-controls="app-drawer"
+                class="inline-flex h-11 items-center rounded-lg border border-white/60 px-3 text-sm font-semibold text-white">
+          Menu
+        </button>
+        <a href="/" class="truncate text-base font-semibold">School Platform</a>
+        <a href="{% url 'notifications:list' %}" title="Notifications"
+           class="relative inline-flex h-11 w-9 items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-5 w-5"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" /></svg>
+          {% if unread_notifications %}
+            <span class="absolute right-0 top-2 min-w-[1.25rem] rounded-full bg-red-600 px-1 text-center text-[10px] font-bold leading-5 text-white">{{ unread_notifications }}</span>
+          {% endif %}
+        </a>
+      </div>
+    </header>
+
+    {# ----- Sidebar (desktop, per the dashboard canvas): brand + links at the top, account at the bottom ----- #}
+    <aside class="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-line bg-white px-3 py-4 md:flex">
+      <a href="/" class="px-2 text-lg font-semibold text-brand-700">School Platform</a>
+      <nav aria-label="Main" class="mt-4 flex-1 overflow-y-auto">
+        {% include "partials/nav_items.html" %}
+      </nav>
+      <div class="mt-4 border-t border-line pt-3">
+        {% if request.school %}
+          <p class="px-2 text-xs text-muted">
+            {{ request.school.name }}{% if current_period %} · {{ current_period.session.name }} · {{ current_period.name }}{% endif %}
+          </p>
+        {% endif %}
+        <div class="mt-2 flex items-center justify-between px-2">
+          <a href="{% url 'notifications:list' %}" title="Notifications"
+             class="relative inline-flex h-11 w-11 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-5 w-5"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" /></svg>
+            {% if unread_notifications %}
+              <span class="absolute right-1 top-1 min-w-[1.25rem] rounded-full bg-red-600 px-1 text-center text-[10px] font-bold leading-5 text-white">{{ unread_notifications }}</span>
+            {% endif %}
+          </a>
+          <form method="post" action="{% url 'accounts:logout' %}">
+            {% csrf_token %}
+            <button type="submit" class="text-sm font-semibold text-brand-700 hover:underline">Log out</button>
+          </form>
+        </div>
+      </div>
+    </aside>
+
+    {# ----- Bottom tab bar (phone + tablet): role favourites + More, per the parent app canvas ----- #}
+    <nav aria-label="Quick navigation" class="fixed bottom-0 inset-x-0 z-30 border-t border-line bg-white pb-[env(safe-area-inset-bottom)] md:hidden">
+      <ul class="flex items-stretch">
+        {% for item in nav_favourites %}
+          <li class="min-w-0 flex-1">
+            <a href="{{ item.url }}" {% if item.active %}aria-current="page"{% endif %}
+               class="mx-1 my-2 flex h-11 items-center justify-center truncate rounded-full px-2 text-xs font-semibold {% if item.active %}bg-brand-50 text-brand-700{% else %}text-slate-600{% endif %}">
+              {{ item.label }}
+            </a>
+          </li>
+        {% endfor %}
+        {% if nav_more %}
+          <li class="min-w-0 flex-1">
+            <button type="button" data-nav-open data-nav-more="true"
+                    class="mx-1 my-2 flex h-11 w-full items-center justify-center rounded-full text-xs font-semibold text-slate-600">
+              More
+            </button>
+          </li>
+        {% endif %}
+      </ul>
+    </nav>
+
+    <script>
+      (function () {
+        var drawer = document.getElementById("app-drawer");
+        if (!drawer) return;
+        var backdrop = document.getElementById("app-backdrop");
+        var openers = document.querySelectorAll("[data-nav-open]");
+        function open() {
+          drawer.classList.remove("invisible", "-translate-x-full");
+          drawer.setAttribute("aria-hidden", "false");
+          if (backdrop) backdrop.hidden = false;
+          openers.forEach(function (el) { el.setAttribute("aria-expanded", "true"); });
+        }
+        function close() {
+          drawer.classList.add("-translate-x-full");
+          drawer.classList.remove("invisible");
+          drawer.setAttribute("aria-hidden", "true");
+          if (backdrop) backdrop.hidden = true;
+          openers.forEach(function (el) { el.setAttribute("aria-expanded", "false"); });
+        }
+        openers.forEach(function (el) { el.addEventListener("click", open); });
+        document.querySelectorAll("[data-nav-close]").forEach(function (el) {
+          el.addEventListener("click", close);
+        });
+        document.addEventListener("keydown", function (e) {
+          if (e.key === "Escape") close();
+        });
+      })();
+    </script>
+  {% else %}
+    <header class="border-b border-line bg-white">
+      <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+        <a href="/" class="text-lg font-semibold text-brand-700">School Platform</a>
+        <div class="flex items-center gap-4 text-sm text-slate-600">
+          {% if user.is_authenticated %}
+            <form method="post" action="{% url 'accounts:logout' %}">
+              {% csrf_token %}
+              <button type="submit" class="font-medium text-brand-700 hover:underline">Log out</button>
+            </form>
+          {% else %}
+            <a href="{% url 'accounts:login' %}" class="font-medium text-brand-700 hover:underline">Log in</a>
+          {% endif %}
+        </div>
+      </div>
+    </header>
+  {% endif %}
+
+  <div class="{% if request.membership and nav_items %}md:pl-60{% endif %}">
+    <div class="{% if request.membership and nav_items %}mx-auto max-w-6xl px-4 py-6 md:py-8{% else %}mx-auto max-w-6xl px-4 py-6{% endif %}">
       {% include "partials/messages.html" %}
-      <main id="main">{% block content %}{% endblock %}</main>
+      <main id="main" {% if request.membership and nav_items %}class="pb-28 md:pb-8"{% endif %}>{% block content %}{% endblock %}</main>
     </div>
   </div>
 </body>

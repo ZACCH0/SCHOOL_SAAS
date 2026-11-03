@@ -1,5 +1,5 @@
 from apps.academics.models import AcademicPeriod
-from .navigation import nav_for
+from .navigation import bottom_bar_for, nav_for
 
 def shell(request):
     membership = getattr(request, "membership", None)
@@ -11,7 +11,13 @@ def shell(request):
         .select_related("session")
         .first()
     )
-    return {"nav_items": nav_for(request, membership), "current_period": period}
+    bar = bottom_bar_for(request, membership)
+    return {
+        "nav_items": nav_for(request, membership),
+        "nav_favourites": bar["items"],
+        "nav_more": bar["more"],
+        "current_period": period,
+    }
 
 
 def unread_notifications(request):
