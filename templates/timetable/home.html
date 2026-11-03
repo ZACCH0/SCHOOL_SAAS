@@ -8,6 +8,11 @@
   {% if no_session %}
     <p class="rounded-lg bg-amber-100 px-4 py-3 text-sm text-warn">There is no current academic session yet. Timetables follow the current session — choose one in the admin first.</p>
   {% else %}
+    {% if not is_manager %}
+      <p class="mb-4">
+        <a href="{% url 'timetable:my' %}" class="rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700">My timetable</a>
+      </p>
+    {% endif %}
     <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {% for klass in classes %}
         <a href="{% url 'timetable:grid' klass.pk %}" class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-line hover:ring-brand-300">

@@ -137,6 +137,48 @@ def class_grid(request, pk):
     )
 
 
+@timetable_access
+def my_timetable(request):
+    """The signed-in teacher's own schedule, derived from the class slots:
+    a slot belongs to them when one of their TeacherAssignments covers it —
+    an exact section assignment wins, a class-wide one covers every section.
+    Breaks are not lessons, so they never appear here."""
+    session = current_session(request.school)
+    if session is None:
+        return render(request, "timetable/my.html", {"no_session": True})
+
+    assignments = TeacherAssignment.objects.filter(
+        school=request.school, session=session, teacher=request.membership,
+    )
+    slots = (
+        TimetableSlot.objects.filter(
+            school=request.school, session=session, is_active=True,
+            subject__isnull=False,
+        )
+        .select_related("subject", "section", "school_class")
+        .order_by("day", "starts_at")
+    )
+    mine = []
+    for slot in slots:
+        covered = any(
+            a.school_class_id == slot.school_class_id
+            and a.subject_id == slot.subject_id
+            and (a.section_id is None or a.section_id == slot.section_id)
+            for a in assignments
+        )
+        if covered:
+            mine.append(slot)
+
+    by_day = {}
+    for slot in mine:
+        by_day.setdefault(slot.day, []).append(slot)
+    entries = [
+        {"name": TimetableSlot.WeekDay(day).label, "slots": by_day[day]}
+        for day in sorted(by_day)
+    ]
+    return render(request, "timetable/my.html", {"session": session, "entries": entries})
+
+
 @manager_only
 def add_slot(request, class_pk):
     """Place a period on a class's timetable (owner/admin only)."""

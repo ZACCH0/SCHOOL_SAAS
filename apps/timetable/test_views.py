@@ -18,10 +18,10 @@ def class_takes(klass, *subjects):
         ClassSubject.objects.create(school=klass.school, school_class=klass, subject=subject)
 
 
-def assign(subject, klass, teacher, session):
+def assign(subject, klass, teacher, session, section=None):
     return TeacherAssignment.objects.create(
         school=klass.school, school_class=klass, subject=subject,
-        teacher=teacher, session=session,
+        teacher=teacher, session=session, section=section,
     )
 
 
@@ -227,3 +227,80 @@ def test_a_foreign_slot_cannot_be_touched(
     assert foreign.is_active and not AuditLog.objects.filter(
         action__startswith="timetable."
     ).exists()
+
+
+@pytest.mark.django_db
+def test_my_timetable_lists_only_the_teacher_covered_lessons(
+    client, school_a, make_session, login_as, make_member, maths
+):
+    session = make_session(school_a, name="2026/2027", current=True)
+    klass = make_class(school_a)
+    class_takes(klass, maths)
+    english = make_subject(school_a, "English")
+    class_takes(klass, english)
+    teacher = login_as(school_a, Role.TEACHER)
+    assign(maths, klass, teacher, session)  # class-wide
+    colleague = make_member(school_a)
+    assign(english, klass, colleague, session)
+
+    slot(school_a, session, klass, subject=maths)
+    slot(school_a, session, klass, subject=english, day=5,
+         starts_at=time(9, 0), ends_at=time(9, 40))
+    slot(school_a, session, klass, label="Long break", day=5,
+         starts_at=time(11, 0), ends_at=time(11, 40))
+
+    response = client.get(reverse("timetable:my"))
+    content = response.content.decode()
+    assert "Mathematics" in content
+    assert "English" not in content    # colleague's lesson, not mine
+    assert "Long break" not in content  # a break is nobody's lesson
+
+    # The next school's manager gets 403 and sees nothing of this list.
+    login_as(school_a, Role.BURSAR)
+    assert client.get(reverse("timetable:my")).status_code == 403
+
+
+@pytest.mark.django_db
+def test_my_timetable_section_assignment_covers_only_its_sections(
+    client, school_a, make_session, login_as, maths
+):
+    from apps.classes.models import Section
+
+    session = make_session(school_a, name="2026/2027", current=True)
+    klass = make_class(school_a)
+    class_takes(klass, maths)
+    teacher = login_as(school_a, Role.TEACHER)
+    a = Section.objects.create(school=school_a, school_class=klass, name="A")
+    b = Section.objects.create(school=school_a, school_class=klass, name="B")
+    assign(maths, klass, teacher, session, section=a)  # exact section, no class-wide
+
+    slot(school_a, session, klass, subject=maths, section=a)
+    slot(school_a, session, klass, subject=maths, section=b, day=5,
+         starts_at=time(9, 0), ends_at=time(9, 40))
+
+    content = client.get(reverse("timetable:my")).content.decode()
+    assert f"{a}" in content and f"{b}" not in content
+    assert "Primary 4 A" in content and "Primary 4 B" not in content
+
+
+@pytest.mark.django_db
+def test_another_schools_never_appear_in_a_teacher_schedule(
+    client, school_a, school_b, make_session, login_as, maths
+):
+    session = make_session(school_a, name="2026/2027", current=True)
+    beta_session = make_session(school_b)
+    klass = make_class(school_a)
+    class_takes(klass, maths)
+    teacher = login_as(school_a, Role.TEACHER)
+    assign(maths, klass, teacher, session)
+    slot(school_a, session, klass, subject=maths)
+
+    beta = make_class(school_b, "Beta Primary 2")
+    beta_maths = make_subject(school_b, "Beta Mathematics")
+    ClassSubject.objects.create(school=school_b, school_class=beta, subject=beta_maths)
+    slot(school_b, beta_session, beta, subject=beta_maths,
+         starts_at=time(9, 0), ends_at=time(9, 40))
+
+    content = client.get(reverse("timetable:my")).content.decode()
+    assert "Mathematics" in content
+    assert "Beta Primary 2" not in content
