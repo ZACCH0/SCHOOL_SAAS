@@ -2,10 +2,10 @@
 
 Single source of truth for where the project stands. Rules for updating it are in `AGENTS.md` section 9.
 
-**Last updated:** 2026-11-04 (T14c dashboards built, 486 passed — owner to verify in browser)
-**Current phase:** Modules 1-4 hard complete. T14 code complete (T14c unverified). Nav shell rebuilt to canvas (T19b). 486 tests passing.
-**Current task:** T14c dashboards DONE (unverified) — owner to walk all four role dashboards in the browser.
-**Next task:** After owner verifies T14c: T14 closes; then T15 documents/analytics/audit log (pick with owner).
+**Last updated:** 2026-11-04 (owner asked to match the ADMIN dashboard to the canvas — rebuilt, 486 passing, UNCOMMITTED; paused mid-task)
+**Current phase:** Modules 1-4 hard complete. T14 code complete but T14c now partially rebuilt to canvas. Nav shell on canvas (T19b). 486 tests passing.
+**Current task:** T14c manager dashboard REBUILT to match `School Platform UI UX Design-png\Admin dashboard.png` — IN WORKING TREE, not committed.
+**Next task (exact steps):** 1) `python manage.py check` + `makemigrations --check --dry-run` 2) rebuild CSS 3) owner browsers-checks the admin dashboard 4) commit `feat: admin dashboard matched to canvas` 5) update this log 6) THEN ask owner whether teacher/parent/bursar dashboards should also be matched to their own canvas screens.
 
 ## Task boardStatuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 
@@ -52,7 +52,17 @@ Single source of truth for where the project stands. Rules for updating it are i
 
 ## Task log (newest first)
 
-### T14c Role dashboards (2026-11-04, 486 passed) — DONE (unverified, owner to check in browser)
+### T14c IN FLIGHT — admin dashboard rebuilt to the design canvas (2026-11-04, 486 passed, NOT COMMITTED)
+- Owner compared the browser with `Admin dashboard.png` and said it was different. Work in the working tree right now:
+  - Manager dashboard layout matches the canvas: page header `Dashboard` + subtitle `School · session · term` + teal `Register student` button → `students:create`; 4 stat cards **Students / Teachers / Attendance today % / Outstanding fees (amber)**; left card **Fees collected by class** with teal progress bars per class (few `widthratio` collected/expected); right card **Needs your attention**: Results waiting for approval (info chip "N sheets"), New applications to review (warn chip N), Attendance not taken today (bad chip "N classes"); keeps a "Latest notices" card that is NOT in the canvas (decision pending with owner: keep or drop)
+  - Selector additions in `apps/core/selectors.py`: `_attendance_today(school)` (present-share formula identical to the attendance page + counts registers not taken today across active classes/sections) and `results_waiting` (sheets submitted/reviewed this period)
+  - `apps/core/views.py`: `_manager_presentation` builds subtitle/button/chip labels; `_dashboard_for(role, school, membership, session, period)` now takes session
+  - Non-manager roles keep the welcome card + their sections (unchanged)
+  - Tests updated in `apps/core/test_dashboard.py`: manager test now also asserts attendance pct 75 (3 present of 4 in one register), missing 0, `results_waiting` 2, subtitle starts with school name, "Register student" rendered. 10 dashboard tests pass, full suite 486
+- LESSON for tests: fixtures must be requested as test parameters — referencing the fixture function name (`klass`) inside the body silently gives the function object, not the data
+- REMAINING: checks, CSS rebuild, browser check by owner, commit, docs update, then owner decision on notices card + whether teacher/parent/bursar dashboards get matched to `Teacher dashboard.png` / `Parent app (phone).png` canvases
+
+### T14c Role dashboards (2026-11-04, 486 passed) — committed `2b97420`, superseded by the canvas rebuild above
 - `/dashboard/` left as the single URL; view stays thin and dispatches on role via new `apps/core/selectors.py` (read-only, active school + current/last period only; empty school = zeros + amber "No term is marked current" note)
 - Role blocks (real data only, no charts): **Owner/Admin** active students, teachers, admissions waiting (applied/reviewed), fees expected/collected/outstanding/rate (reuses `fees_overview`), latest notices; **Bursar** same money stats + 5 newest payments this term (`fees:payment_list` link) + notices; **Teacher** periods today (coverage rule), draft sheets only I can still fill, teaching count cards, notices; **Parent** children cards via `children_for` with term fee owed (subquery totals mirroring the fees module) + published-results counts + notices. Student role gets the plain welcome card
 - Notice audience on the dashboard follows the notice board rule (managers all; roles everyone+own audience); archived never shown
