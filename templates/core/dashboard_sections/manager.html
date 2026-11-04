@@ -1,44 +1,73 @@
 {% load humanize %}
 <div class="space-y-5">
-  <div class="grid gap-3 sm:grid-cols-3">
+  {% include "components/page_header.html" with crumb="Dashboard" title="Dashboard" action_url=register_student_url action_label="Register student" %}
+
+  <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
     <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-line">
-      <p class="text-sm text-muted">Active students</p>
-      <p class="mt-1 text-3xl font-bold tracking-tight text-ink">{{ students }}</p>
-      <a href="{% url 'students:list' %}" class="mt-2 inline-block text-sm font-medium text-brand-700 hover:underline">Open students</a>
+      <p class="text-sm text-muted">Students</p>
+      <p class="mt-1 text-3xl font-extrabold text-ink">{{ students }}</p>
     </div>
     <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-line">
       <p class="text-sm text-muted">Teachers</p>
-      <p class="mt-1 text-3xl font-bold tracking-tight text-ink">{{ teachers }}</p>
+      <p class="mt-1 text-3xl font-extrabold text-ink">{{ teachers }}</p>
     </div>
     <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-line">
-      <p class="text-sm text-muted">Admissions waiting</p>
-      <p class="mt-1 text-3xl font-bold tracking-tight {% if admissions_waiting %}text-warn{% else %}text-ink{% endif %}">{{ admissions_waiting }}</p>
-      <p class="mt-1 text-sm text-muted">Applied or reviewed</p>
-      <a href="{% url 'admissions:list' %}" class="mt-2 inline-block text-sm font-medium text-brand-700 hover:underline">Open admissions</a>
+      <p class="text-sm text-muted">Attendance today</p>
+      <p class="mt-1 text-3xl font-extrabold text-ink">{% if attendance.pct is not None %}{{ attendance.pct }}%{% else %}&mdash;{% endif %}</p>
+    </div>
+    <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-line">
+      <p class="text-sm text-muted">Outstanding fees</p>
+      <p class="mt-1 text-3xl font-extrabold {% if fees.outstanding %}text-warn{% else %}text-ink{% endif %}">&#8358;{{ fees.outstanding|intcomma }}</p>
     </div>
   </div>
 
-  <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-    <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-line">
-      <p class="text-sm text-muted">Expected this term</p>
-      <p class="mt-1 text-2xl font-extrabold text-ink">&#8358;{{ fees.expected|intcomma }}</p>
+  <div class="grid gap-3 lg:grid-cols-5">
+    <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-line lg:col-span-3">
+      <h2 class="text-lg font-bold">Fees collected by class</h2>
+      {% if fees.rows %}
+        <div class="mt-4 space-y-3">
+          {% for row in fees.rows %}
+            {% if row.expected %}
+              {% widthratio row.collected row.expected 100 as bar_pct %}
+              <div>
+                <p class="mb-1 text-sm text-slate-600">{{ row.class_name|default:"No class" }}</p>
+                <div class="h-2.5 w-full rounded-full bg-slate-200">
+                  <div class="h-2.5 rounded-full bg-brand-700" style="width: {% if bar_pct > 100 %}100{% else %}{{ bar_pct }}{% endif %}%;"></div>
+                </div>
+              </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="mt-2 text-sm text-muted">No invoices issued this term yet.</p>
+      {% endif %}
     </div>
-    <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-line">
-      <p class="text-sm text-muted">Collected</p>
-      <p class="mt-1 text-2xl font-extrabold text-ok">&#8358;{{ fees.collected|intcomma }}</p>
-    </div>
-    <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-line">
-      <p class="text-sm text-muted">Outstanding</p>
-      <p class="mt-1 text-2xl font-extrabold {% if fees.outstanding %}text-warn{% else %}text-ink{% endif %}">&#8358;{{ fees.outstanding|intcomma }}</p>
-    </div>
-    <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-line">
-      <p class="text-sm text-muted">Collection rate</p>
-      <p class="mt-1 text-2xl font-extrabold text-ink">{% if fees.rate is not None %}{{ fees.rate }}%{% else %}&mdash;{% endif %}</p>
-      <a href="{% url 'fees:home' %}" class="mt-2 inline-block text-sm font-medium text-brand-700 hover:underline">Open fees</a>
+
+    <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-line lg:col-span-2">
+      <h2 class="text-lg font-bold">Needs your attention</h2>
+      {% if results_waiting or admissions_waiting or attendance.missing %}
+        <ul class="mt-2 divide-y divide-line">
+          <li class="flex items-center justify-between py-3 first:pt-0">
+            <a href="{% url 'results:home' %}" class="text-slate-700 hover:text-ink">Results waiting for approval</a>
+            {% include "components/status_chip.html" with kind="info" label=results_waiting_label %}
+          </li>
+          <li class="flex items-center justify-between py-3">
+            <a href="{% url 'admissions:list' %}" class="text-slate-700 hover:text-ink">New applications to review</a>
+            {% include "components/status_chip.html" with kind="warn" label=admissions_waiting_label %}
+          </li>
+          <li class="flex items-center justify-between py-3">
+            <a href="{% url 'attendance:home' %}" class="text-slate-700 hover:text-ink">Attendance not taken today</a>
+            {% include "components/status_chip.html" with kind="bad" label=attendance_missing_label %}
+          </li>
+        </ul>
+      {% else %}
+        <p class="mt-2 text-sm text-muted">Nothing needs your attention right now.</p>
+      {% endif %}
     </div>
   </div>
+
   {% if not period %}
-    <p class="rounded-lg bg-amber-100 px-4 py-3 text-sm text-warn">No term is marked current yet &mdash; finance and results totals appear once a session and term are set up.</p>
+    <p class="rounded-lg bg-amber-100 px-4 py-3 text-sm text-warn">No term is marked current yet &mdash; money and result totals appear once a session and term are set up.</p>
   {% endif %}
 
   <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-line">

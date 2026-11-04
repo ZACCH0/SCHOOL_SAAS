@@ -1,5 +1,6 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
+from django.urls import reverse
 
 from apps.academics.selectors import current_or_last_period, current_session
 from apps.schools.models import Membership
@@ -18,7 +19,22 @@ def home(request):
     return render(request, "core/home.html")
 
 
-def _dashboard_for(role, school, membership, period):
+def _manager_presentation(data, school, session, period):
+    """Small display strings for the manager page header and attention rows."""
+    parts = [school.name]
+    if session:
+        parts.append(session.name)
+        if period:
+            parts.append(period.name)
+    data["subtitle"] = " · ".join(parts)
+    data["register_student_url"] = reverse("students:create")
+    data["results_waiting_label"] = f"{data['results_waiting']} sheets"
+    data["admissions_waiting_label"] = f"{data['admissions_waiting']}"
+    data["attendance_missing_label"] = f"{data['attendance']['missing']} classes"
+    return data
+
+
+def _dashboard_for(role, school, membership, session, period):
     """Read-only dashboard data for this member's role. Every participating
     app is school-scoped, so nothing from another school can ever leak in."""
     if role == Membership.Role.BURSAR:
@@ -28,7 +44,10 @@ def _dashboard_for(role, school, membership, period):
     if role == Membership.Role.PARENT:
         return {"role_key": "parent", **parent_dashboard(school, membership, period)}
     if role in MANAGER_ROLES:
-        return {"role_key": "manager", **manager_dashboard(school, period)}
+        return _manager_presentation(
+            {"role_key": "manager", **manager_dashboard(school, period)},
+            school, session, period,
+        )
     # Student role (and anything not built yet): plain welcome only.
     return {"role_key": ""}
 
@@ -51,7 +70,8 @@ def dashboard(request):
         "session": session,
         "period": period,
         **_dashboard_for(
-            request.membership.role, request.school, request.membership, period,
+            request.membership.role, request.school, request.membership,
+            session, period,
         ),
     }
     return render(request, "core/dashboard.html", context)

@@ -11,6 +11,7 @@ from django.utils import timezone
 from apps.academics.models import AcademicSession
 from apps.admissions.models import Applicant
 from apps.announcements.models import Announcement
+from apps.attendance.models import AttendanceRecord, AttendanceSession
 from apps.classes.models import Level, SchoolClass, Section
 from apps.fees.models import FeeItem, Invoice, InvoiceItem, Payment
 from apps.results.models import ResultSheet
@@ -84,12 +85,15 @@ def dashboard_url():
 
 
 class TestManagerDashboard:
-    def test_counts_real_data_and_role_key(self, client, school_a, session, period):
+    def test_counts_real_data_and_role_key(
+        self, client, school_a, session, period, klass, section_a,
+    ):
         owner = membership(make_user("owner1"), school_a, Role.OWNER)
         membership(make_user("t1"), school_a, Role.TEACHER)  # one TEACHER member
         pupil = Student.objects.create(
             school=school_a, first_name="Ade", last_name="Ogunlesi", sex="male",
             date_of_birth=date(2018, 3, 5), admission_number="FSS/2026/001",
+            current_class=klass, current_section=section_a,
         )
         pupil_two = Student.objects.create(
             school=school_a, first_name="Bisi", last_name="Adeyi", sex="female",
@@ -113,6 +117,54 @@ class TestManagerDashboard:
         Payment.objects.create(school=school_a, invoice=invoice, amount=Decimal("20000"),
                                reference="RCPT-001", paid_on=date(2026, 9, 15),
                                received_by=bursar_member)
+        # Attendance today: 3 present of 4 marked lines in one register.
+        today = timezone.localdate()
+        register = AttendanceSession.objects.create(
+            school=school_a, session=session, period=period,
+            school_class=klass, section=section_a, date=today,
+        )
+        maths = Subject.objects.create(school=school_a, name="Mathematics")
+        ClassSubject.objects.create(school=school_a, school_class=klass, subject=maths)
+        AttendanceRecord.objects.create(
+            school=school_a, register=register, student=pupil,
+            status=AttendanceRecord.Status.PRESENT,
+        )
+        pupil_three = Student.objects.create(
+            school=school_a, first_name="Femi", last_name="Ojo", sex="male",
+            date_of_birth=date(2018, 5, 5), admission_number="FSS/2026/003",
+            current_class=klass, current_section=section_a,
+        )
+        AttendanceRecord.objects.create(
+            school=school_a, register=register, student=pupil_three,
+            status=AttendanceRecord.Status.PRESENT,
+        )
+        pupil_four = Student.objects.create(
+            school=school_a, first_name="Dayo", last_name="Ade", sex="male",
+            date_of_birth=date(2018, 7, 7), admission_number="FSS/2026/004",
+            current_class=klass, current_section=section_a,
+        )
+        AttendanceRecord.objects.create(
+            school=school_a, register=register, student=pupil_four,
+            status=AttendanceRecord.Status.PRESENT,
+        )
+        pupil_five = Student.objects.create(
+            school=school_a, first_name="Tola", last_name="Fola", sex="female",
+            date_of_birth=date(2018, 8, 8), admission_number="FSS/2026/005",
+            current_class=klass, current_section=section_a,
+        )
+        AttendanceRecord.objects.create(
+            school=school_a, register=register, student=pupil_five,
+            status=AttendanceRecord.Status.ABSENT,
+        )
+        # Two sheets waiting on the office (submitted and reviewed).
+        ResultSheet.objects.create(
+            school=school_a, period=period, school_class=klass, subject=maths,
+            status=ResultSheet.Status.SUBMITTED, submitted_by=owner,
+        )
+        reviewed = ResultSheet.objects.create(
+            school=school_a, period=period, school_class=klass, section=section_a,
+            subject=maths, status=ResultSheet.Status.REVIEWED, submitted_by=owner,
+        )
 
         client.force_login(owner.user)
         response = client.get(dashboard_url())
@@ -120,13 +172,18 @@ class TestManagerDashboard:
         assert response.status_code == 200
         context = response.context
         assert context["role_key"] == "manager"
-        assert context["students"] == 1  # graduated excluded
+        assert context["students"] == 4  # graduated excluded
         assert context["teachers"] == 1
         assert context["admissions_waiting"] == 1  # admitted excluded
         assert context["fees"]["expected"] == Decimal("50000")
         assert context["fees"]["collected"] == Decimal("20000")
         assert context["fees"]["outstanding"] == Decimal("30000")
         assert context["fees"]["rate"] == 40
+        assert context["attendance"]["pct"] == 75  # same formula as attendance page
+        assert context["attendance"]["missing"] == 0  # the taken register covers the only spot
+        assert context["results_waiting"] == 2
+        assert context["subtitle"].startswith("Alpha School")
+        assert "Register student" in response.content.decode()
 
     def test_other_schools_numbers_never_leak(self, client, school_a, school_b, session):
         """Tenant isolation: Beta's people and money never change Alpha's page."""

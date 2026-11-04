@@ -13,6 +13,8 @@ from django.utils import timezone
 from apps.academics.selectors import current_or_last_period
 from apps.admissions.models import Applicant
 from apps.announcements.models import Announcement
+from apps.attendance.models import AttendanceRecord, AttendanceSession
+from apps.classes.models import SchoolClass
 from apps.fees.models import Invoice, InvoiceItem, Payment
 from apps.fees.selectors import fees_overview
 from apps.portal.selectors import children_for
@@ -60,9 +62,38 @@ def _fees(school, period):
     return fees_overview(school, period) if period else _no_fees_yet()
 
 
+def _attendance_today(school):
+    """Attendance for TODAY, using the same formula as the attendance page
+    (present share of today's marked lines) plus how many registers the
+    office has not taken yet. Read-only."""
+    today = timezone.localdate()
+    registers = AttendanceSession.objects.for_school(school).filter(date=today)
+    records = AttendanceRecord.objects.filter(register__in=registers)
+    total = records.count()
+    present = records.filter(status=AttendanceRecord.Status.PRESENT).count()
+    missing = 0
+    for klass in SchoolClass.objects.for_school(school).filter(is_active=True):
+        spots = list(klass.sections.filter(is_active=True)) or [None]
+        for section in spots:
+            if not AttendanceSession.objects.for_school(school).filter(
+                school_class=klass, date=today, section=section,
+            ).exists():
+                missing += 1
+    return {
+        "pct": round(present * 100 / total) if total else None,
+        "missing": missing,
+    }
+
+
 def manager_dashboard(school, period):
-    """Owner/admin numbers: people, admissions waiting on the office, and the
-    money position for the term."""
+    """Owner/admin numbers: people, today's attendance, admissions waiting on
+    the office, sheets waiting for approval, and the money position."""
+    results_waiting = 0
+    if period:
+        results_waiting = ResultSheet.objects.for_school(school).filter(
+            period=period,
+            status__in=[ResultSheet.Status.SUBMITTED, ResultSheet.Status.REVIEWED],
+        ).count()
     return {
         "students": Student.objects.for_school(school)
         .filter(status=Student.Status.ACTIVE).count(),
@@ -72,6 +103,8 @@ def manager_dashboard(school, period):
         "admissions_waiting": Applicant.objects.for_school(school).filter(
             status__in=["applied", "reviewed"],
         ).count(),
+        "results_waiting": results_waiting,
+        "attendance": _attendance_today(school),
         "fees": _fees(school, period),
         "notices": announcements_for(school, Membership.Role.OWNER),
     }
