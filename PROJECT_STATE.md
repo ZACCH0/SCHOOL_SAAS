@@ -2,10 +2,10 @@
 
 Single source of truth for where the project stands. Rules for updating it are in `AGENTS.md` section 9.
 
-**Last updated:** 2026-11-04 (T15a audit log page built — 496 passing; owner to verify in browser)
+**Last updated:** 2026-11-04 (T15b documents built — 517 passing; owner to verify in browser; also found a settings typo to fix, see known issues)
 **Current phase:** Modules 1-4 hard complete. Owner decision 2026-11-04: FINISH the remaining backend first (T15 → T7e → T16 → T17 → T18), THEN one final UI pass to canvas (dashboards incl. admin polish, teacher/parent/bursar matches, T7d/T10/T13 browser verifications roll in there). "Latest notices" card KEPT on the manager dashboard (owner decision 2026-11-04).
-**Current task:** T15a audit log page — DONE (unverified in browser). Next: T15b documents.
-**Next task (exact steps):** 1) owner browser-checks /audit/ (owner/admin see it, teacher/bursar/parent 403, search + date filters, pagination) 2) T15b documents module: spec → owner approval → build (Documents with controlled access, REQUIREMENTS module 12) 3) after T15: T7e login by phone/email → T16 → T17 → T18 → final UI pass.
+**Current task:** T15b documents — DONE (unverified in browser). Owner to check: upload as owner, open as parent/teacher/bursar, take down; teacher must never see managers-only docs.
+**Next task (exact steps):** 1) fix the `AXES_COOLbOFF_TIME` typo in `config/settings/base.py:111` (`AXES_COOLOFF_TIME`) — lockout time was silently ignored; add/verify a test for the 15-min unlock 2) owner verification of T15b in the browser 3) T15 analytics is optional/later — next agreed backend task is T7e login by phone/email (spec → approval → build) → T16 → T17 → T18 → final UI pass.
 
 ## Task boardStatuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 
@@ -30,7 +30,7 @@ Single source of truth for where the project stands. Rules for updating it are i
 | T12 | Assessments, results, grading, workflow, report cards (PDF) | DONE (verified) | T12a verified 2026-10-28; T12b/c workflow + notifications verified in browser; T12d PDF verified; T12e ranking/totals/attendance + HTML restyle approved by owner 2026-10-30. 381 tests passed |
 | T13 | Finance: fee structures, invoices, payments, receipts, balances | DONE (unverified by owner in browser) | T13a model, T13b services, T13c pages. 257 tests passed on 2026-10-26; idempotent payments, no overpay, audit, tenant isolation |
 | T14 | Dashboards, announcements, notifications, timetable | IN PROGRESS | T14a verified 2026-11-03 (`4800bdc`); T14b verified 2026-11-04 (36 timetable tests); T14c dashboards DONE (unverified) — 486 suite |
-| T15 | Documents, analytics, audit log — T15a audit log page DONE (unverified in browser) | IN PROGRESS | T15a: 10 tests in apps/audit/test_views.py; 496 passed |
+| T15 | Documents, analytics, audit log — T15a audit log DONE (verified by owner), T15b documents DONE (unverified) | IN PROGRESS | 10 audit + 21 documents tests; 517 passed |
 | T16 | Security hardening (login attempt limiting, backups, file security, production settings) | TODO | |
 | T17 | REST API (only where useful) | TODO | |
 | T18 | Production deployment (Render) and school pilot | TODO | |
@@ -51,6 +51,21 @@ Single source of truth for where the project stands. Rules for updating it are i
 | P3 | Parent portal step 3: report card HTML + PDF for linked parents | DONE (verified) | Owner opened/downloaded the PDF from the portal; label size fixed on their feedback. 20 portal tests; 376 passed |
 
 ## Task log (newest first)
+
+### T15b Documents with controlled access (2026-11-04, 517 passed)
+- Spec approved by owner over T15b discussion: 3 audiences (Managers only / All staff / Everyone incl. parents; per-class targeting deferred), LOCAL file storage now with cloud (Cloudflare R2 free tier recommended) deferred to T18 — the decision rationale: serve downloads through the view so the storage swap later is settings-only
+- New app `apps.documents` (INSTALLED_APPS after apps.timetable). Model `Document` (ValidatedSchoolModel): title, category/description free text, `file` (FileField, `upload_to=documents/school-<id>/<uuid>_<name>` so two uploads never overwrite each other), audience (default MANAGERS — safest), `uploaded_by` Membership FK (clean() refuses non owner/admin + ensure_same_school), is_active archive flag, index (school, audience, is_active). Guard in `clean()`: extension allowlist (.pdf .doc .docx .xls .xlsx .png .jpg .jpeg .txt up to 20 MB — size checked only on fresh/uncommitted files), friendly messages
+- Services `upload_document` (owner/admin only, audited `documents.document_uploaded`) and `archive_document` (never deletes; audited `documents.document_archived`, ensure_owned refuses foreign docs) + shared `may_view(member, document)` + single AUDIENCE_ROLES map (managers = owner/admin; staff adds teacher+bursar; everyone = all roles)
+- Pages (`documents/`, namespace `documents`): list — managers see all, every other role only documents whose audience includes their role (same idea as announcements, one map reused from services), 25/page; share form reuses `templates/form_page.html` (gained `enctype="multipart/form-data"` behind `form.is_multipart` so old text forms are untouched); `Open` download served through `FileResponse` with `may_view` re-checked on EVERY download, active-only, foreign school 404, no direct media URLs anywhere; "Take down" POST-only for managers. Nav "Documents" for all roles (after Announcements)
+- Settings: `MEDIA_URL/MEDIA_ROOT` added to base.py; `MEDIA_ROOT` in test points to a temp dir so uploads never touch project files; `media/` already git-ignored; media serving is deliberately NOT wired into urls.py (secure by default)
+- Tests 21 (`apps/documents/tests.py` 7 model incl. tenant isolation + role/extension/size refuses; `test_services.py` 6 incl. upload audit, teacher/bursar 403, invalid audience, archive keeps row, foreign archive refused; `test_views.py` 8 incl. full role matrix on the list, parent downloads everyone-doc but 403 on managers-only, foreign download/archive 404, archived 404, non-manager submit 403)
+- Migrations `documents.0001_initial` applied; checks clean; CSS rebuilt; suite 517 passed
+- Commit: `feat: documents with controlled access - audiences, server-checked downloads, 21 tests`
+- Owner next: as owner upload a PDF to everyone + one managers-only; check Documents list as teacher/bursar/parent; download link; take down
+
+### T15a audit log page VERIFIED by owner (2026-11-04, docs only)
+- Owner checked /audit/ in the browser. T15a marked DONE (verified). No code changes; suite stands at 496 passed.
+- Next: T15b documents (spec → approval → build).
 
 ### T15a Audit log page (2026-11-04, 496 passed)
 - Spec approved by owner including the date range filter (owner asked for it; recommendation accepted). Metadata stays hidden in v1 — it lives in the DB and admin already

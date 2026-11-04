@@ -26,6 +26,7 @@ NAV_ITEMS = [
     ("Dashboard", "core:dashboard", None),
     ("Notifications", "notifications:list", None),
     ("Announcements", "announcements:list", None),
+    ("Documents", "documents:list", None),
     ("Timetable", "timetable:home", TIMETABLE_ROLES),
     ("Attendance", "attendance:home", ATTENDANCE_ROLES),
     ("Results", "results:home", RESULTS_ROLES),

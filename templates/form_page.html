@@ -4,7 +4,7 @@
 
 {% block content %}
   {% include "components/page_header.html" with title=title %}
-  <form method="post" class="max-w-lg space-y-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-line">
+  <form method="post" {% if form.is_multipart %}enctype="multipart/form-data"{% endif %} class="max-w-lg space-y-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-line">
     {% csrf_token %}
     {% for error in form.non_field_errors %}
       <p class="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800">{{ error }}</p>
