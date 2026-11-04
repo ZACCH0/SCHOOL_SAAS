@@ -45,3 +45,10 @@ def test_successful_login_resets_the_failure_count(client, teacher):
     for _ in range(3):
         attempt(client, "teacher1", "wrong")
     assert attempt(client, "teacher1", GOOD).status_code == 302
+
+def test_lockout_time_is_actually_configured():
+    from datetime import timedelta
+
+    from django.conf import settings
+
+    assert settings.AXES_COOLOFF_TIME == timedelta(minutes=15)

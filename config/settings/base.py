@@ -108,7 +108,7 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 AXES_FAILURE_LIMIT = 5
-AXES_COOLbOFF_TIME = timedelta(minutes=15)
+AXES_COOLOFF_TIME = timedelta(minutes=15)
 AXES_LOCKOUT_PARAMETERS = [["username", "ip_address"]]  # lock the pair, not just the IP
 AXES_RESET_ON_SUCCESS = True
 AXES_LOCKOUT_TEMPLATE = "accounts/locked_out.html"
