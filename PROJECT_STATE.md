@@ -2,10 +2,10 @@
 
 Single source of truth for where the project stands. Rules for updating it are in `AGENTS.md` section 9.
 
-**Last updated:** 2026-11-04 (owner verified T14b timetable + My timetable in browser — T14c dashboards next)
-**Current phase:** Modules 1-4 hard complete. T14 in progress. Nav shell rebuilt to canvas (T19b). 476 tests passing.
-**Current task:** T14 DONE (verified) — nothing in flight.
-**Next task:** T14c announcements/notifications.
+**Last updated:** 2026-11-04 (T14c dashboards built, 486 passed — owner to verify in browser)
+**Current phase:** Modules 1-4 hard complete. T14 code complete (T14c unverified). Nav shell rebuilt to canvas (T19b). 486 tests passing.
+**Current task:** T14c dashboards DONE (unverified) — owner to walk all four role dashboards in the browser.
+**Next task:** After owner verifies T14c: T14 closes; then T15 documents/analytics/audit log (pick with owner).
 
 ## Task boardStatuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 
@@ -29,7 +29,7 @@ Single source of truth for where the project stands. Rules for updating it are i
 | T7d | Admin resets a user's password (temporary password, forced change) for users without email | DONE (unverified in browser) | Commit `52a3727`; 8 tests in apps/accounts/test_password_admin.py; 389 passed |
 | T12 | Assessments, results, grading, workflow, report cards (PDF) | DONE (verified) | T12a verified 2026-10-28; T12b/c workflow + notifications verified in browser; T12d PDF verified; T12e ranking/totals/attendance + HTML restyle approved by owner 2026-10-30. 381 tests passed |
 | T13 | Finance: fee structures, invoices, payments, receipts, balances | DONE (unverified by owner in browser) | T13a model, T13b services, T13c pages. 257 tests passed on 2026-10-26; idempotent payments, no overpay, audit, tenant isolation |
-| T14 | Dashboards, announcements, notifications, timetable | IN PROGRESS | T14a verified by owner 2026-11-03 (commit `4800bdc`, 22 tests, 437 suite); T14b verified by owner 2026-11-04 — 36 timetable tests, 476 suite |
+| T14 | Dashboards, announcements, notifications, timetable | IN PROGRESS | T14a verified 2026-11-03 (`4800bdc`); T14b verified 2026-11-04 (36 timetable tests); T14c dashboards DONE (unverified) — 486 suite |
 | T15 | Documents, analytics, audit log | TODO | |
 | T16 | Security hardening (login attempt limiting, backups, file security, production settings) | TODO | |
 | T17 | REST API (only where useful) | TODO | |
@@ -51,6 +51,17 @@ Single source of truth for where the project stands. Rules for updating it are i
 | P3 | Parent portal step 3: report card HTML + PDF for linked parents | DONE (verified) | Owner opened/downloaded the PDF from the portal; label size fixed on their feedback. 20 portal tests; 376 passed |
 
 ## Task log (newest first)
+
+### T14c Role dashboards (2026-11-04, 486 passed) — DONE (unverified, owner to check in browser)
+- `/dashboard/` left as the single URL; view stays thin and dispatches on role via new `apps/core/selectors.py` (read-only, active school + current/last period only; empty school = zeros + amber "No term is marked current" note)
+- Role blocks (real data only, no charts): **Owner/Admin** active students, teachers, admissions waiting (applied/reviewed), fees expected/collected/outstanding/rate (reuses `fees_overview`), latest notices; **Bursar** same money stats + 5 newest payments this term (`fees:payment_list` link) + notices; **Teacher** periods today (coverage rule), draft sheets only I can still fill, teaching count cards, notices; **Parent** children cards via `children_for` with term fee owed (subquery totals mirroring the fees module) + published-results counts + notices. Student role gets the plain welcome card
+- Notice audience on the dashboard follows the notice board rule (managers all; roles everyone+own audience); archived never shown
+- One shared rule extraction: `apps/subjects/selectors.py` `assignments_for` + `assignment_covers` (class-wide covers every section, exact-section only its own, subject must match) — now used by score-entry eligibility, timetable, and the dashboard; `apps/timetable/selectors.py` `covering_slots(school, session, membership, day)` and `timetable:my_timetable` refactored onto it, behaviour unchanged (all timetable tests green)
+- Templates `templates/core/dashboard_sections/{manager,bursar,teacher,parent}.html` reuse fees-home stat markup + shared components; money via `{% load humanize %}` `₦…|intcomma`
+- Tests `apps/core/test_dashboard.py` (10): manager real counts (graduated/admitted excluded, rate 40), manager no-session empty-state, Beta-school numbers never leak (counts + name), bursar money + this-term payments only, teacher today's periods (other day + break excluded) + draft sheets only mine + published/foreign-subject hidden, school B teacher sees nothing from school A but own sheet, parent children with owed 15000 (parents audience only, staff hidden), unlinked child never listed
+- Test conventions learned: pytest classes MUST be named `Test*` (`XxxDashboardTests` collected nothing); ValidatedSchoolModel runs `clean()` on save so every child row needs `school=`; PUBLISHED result sheets need `submitted_by`; announcements require an owner/admin publisher
+- CSS rebuilt; `check` + `makemigrations --check` clean. Owner should next walk each role's dashboard in the browser (welcome line includes the term)
+- Commit: `feat: role dashboards - manager bursar teacher parent with real data only, 10 tests`
 
 ### T14b verified in browser (2026-11-04, docs only)
 - Owner walked the timetable pages (class grids + teacher "My timetable") and confirmed they work. T14b marked DONE (verified).
