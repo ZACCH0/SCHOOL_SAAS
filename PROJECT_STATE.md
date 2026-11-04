@@ -2,10 +2,10 @@
 
 Single source of truth for where the project stands. Rules for updating it are in `AGENTS.md` section 9.
 
-**Last updated:** 2026-11-03 (T14b complete + teacher "My timetable" added same day: 476 passed — owner walks Timetable + My timetable, then T14c)
+**Last updated:** 2026-11-04 (owner verified T14b timetable + My timetable in browser — T14c dashboards next)
 **Current phase:** Modules 1-4 hard complete. T14 in progress. Nav shell rebuilt to canvas (T19b). 476 tests passing.
-**Current task:** T14b timetable DONE (unverified in browser) incl. per-teacher view — awaiting owner.
-**Next task:** T14c dashboards (after the owner verifies the timetable pages).
+**Current task:** T14 DONE (verified) — nothing in flight.
+**Next task:** T14c announcements/notifications.
 
 ## Task boardStatuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 
@@ -29,7 +29,7 @@ Single source of truth for where the project stands. Rules for updating it are i
 | T7d | Admin resets a user's password (temporary password, forced change) for users without email | DONE (unverified in browser) | Commit `52a3727`; 8 tests in apps/accounts/test_password_admin.py; 389 passed |
 | T12 | Assessments, results, grading, workflow, report cards (PDF) | DONE (verified) | T12a verified 2026-10-28; T12b/c workflow + notifications verified in browser; T12d PDF verified; T12e ranking/totals/attendance + HTML restyle approved by owner 2026-10-30. 381 tests passed |
 | T13 | Finance: fee structures, invoices, payments, receipts, balances | DONE (unverified by owner in browser) | T13a model, T13b services, T13c pages. 257 tests passed on 2026-10-26; idempotent payments, no overpay, audit, tenant isolation |
-| T14 | Dashboards, announcements, notifications, timetable | IN PROGRESS | T14a verified by owner 2026-11-03 (commit `4800bdc`, 22 tests, 437 suite); T14b DONE (unverified) — 33 timetable tests, 473 suite |
+| T14 | Dashboards, announcements, notifications, timetable | IN PROGRESS | T14a verified by owner 2026-11-03 (commit `4800bdc`, 22 tests, 437 suite); T14b verified by owner 2026-11-04 — 36 timetable tests, 476 suite |
 | T15 | Documents, analytics, audit log | TODO | |
 | T16 | Security hardening (login attempt limiting, backups, file security, production settings) | TODO | |
 | T17 | REST API (only where useful) | TODO | |
@@ -51,6 +51,11 @@ Single source of truth for where the project stands. Rules for updating it are i
 | P3 | Parent portal step 3: report card HTML + PDF for linked parents | DONE (verified) | Owner opened/downloaded the PDF from the portal; label size fixed on their feedback. 20 portal tests; 376 passed |
 
 ## Task log (newest first)
+
+### T14b verified in browser (2026-11-04, docs only)
+- Owner walked the timetable pages (class grids + teacher "My timetable") and confirmed they work. T14b marked DONE (verified).
+- No code changes. Suite stands at 476 passed.
+- Next task: T14c announcements/notifications.
 
 ### Teacher "My timetable" (2026-11-03, 476 passed) — follow-up to T14b, owner request
 - Owner asked whether every teacher gets their own timetable. Answer: the office still builds the single class timetable (one source of truth, no clashes); the teacher's personal view is DERIVED. Built `/timetable/my/` (namespace `timetable:my`)
