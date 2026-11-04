@@ -35,6 +35,7 @@ NAV_ITEMS = [
     ("Classes", "classes:list", MANAGERS),
     ("Subjects", "subjects:list", MANAGERS),
     ("Fees", "fees:home", FEES_ROLES),
+    ("Audit log", "audit:list", MANAGERS),
     ("My children", "portal:children", PORTAL_ROLES),
 ]
 

@@ -2,10 +2,10 @@
 
 Single source of truth for where the project stands. Rules for updating it are in `AGENTS.md` section 9.
 
-**Last updated:** 2026-11-04 (owner asked to match the ADMIN dashboard to the canvas — rebuilt, 486 passing, UNCOMMITTED; paused mid-task)
-**Current phase:** Modules 1-4 hard complete. T14 code complete but T14c now partially rebuilt to canvas. Nav shell on canvas (T19b). 486 tests passing.
-**Current task:** T14c manager dashboard REBUILT to match `School Platform UI UX Design-png\Admin dashboard.png` — IN WORKING TREE, not committed.
-**Next task (exact steps):** 1) `python manage.py check` + `makemigrations --check --dry-run` 2) rebuild CSS 3) owner browsers-checks the admin dashboard 4) commit `feat: admin dashboard matched to canvas` 5) update this log 6) THEN ask owner whether teacher/parent/bursar dashboards should also be matched to their own canvas screens.
+**Last updated:** 2026-11-04 (T15a audit log page built — 496 passing; owner to verify in browser)
+**Current phase:** Modules 1-4 hard complete. Owner decision 2026-11-04: FINISH the remaining backend first (T15 → T7e → T16 → T17 → T18), THEN one final UI pass to canvas (dashboards incl. admin polish, teacher/parent/bursar matches, T7d/T10/T13 browser verifications roll in there). "Latest notices" card KEPT on the manager dashboard (owner decision 2026-11-04).
+**Current task:** T15a audit log page — DONE (unverified in browser). Next: T15b documents.
+**Next task (exact steps):** 1) owner browser-checks /audit/ (owner/admin see it, teacher/bursar/parent 403, search + date filters, pagination) 2) T15b documents module: spec → owner approval → build (Documents with controlled access, REQUIREMENTS module 12) 3) after T15: T7e login by phone/email → T16 → T17 → T18 → final UI pass.
 
 ## Task boardStatuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 
@@ -30,7 +30,7 @@ Single source of truth for where the project stands. Rules for updating it are i
 | T12 | Assessments, results, grading, workflow, report cards (PDF) | DONE (verified) | T12a verified 2026-10-28; T12b/c workflow + notifications verified in browser; T12d PDF verified; T12e ranking/totals/attendance + HTML restyle approved by owner 2026-10-30. 381 tests passed |
 | T13 | Finance: fee structures, invoices, payments, receipts, balances | DONE (unverified by owner in browser) | T13a model, T13b services, T13c pages. 257 tests passed on 2026-10-26; idempotent payments, no overpay, audit, tenant isolation |
 | T14 | Dashboards, announcements, notifications, timetable | IN PROGRESS | T14a verified 2026-11-03 (`4800bdc`); T14b verified 2026-11-04 (36 timetable tests); T14c dashboards DONE (unverified) — 486 suite |
-| T15 | Documents, analytics, audit log | TODO | |
+| T15 | Documents, analytics, audit log — T15a audit log page DONE (unverified in browser) | IN PROGRESS | T15a: 10 tests in apps/audit/test_views.py; 496 passed |
 | T16 | Security hardening (login attempt limiting, backups, file security, production settings) | TODO | |
 | T17 | REST API (only where useful) | TODO | |
 | T18 | Production deployment (Render) and school pilot | TODO | |
@@ -52,7 +52,21 @@ Single source of truth for where the project stands. Rules for updating it are i
 
 ## Task log (newest first)
 
-### T14c IN FLIGHT — admin dashboard rebuilt to the design canvas (2026-11-04, 486 passed, NOT COMMITTED)
+### T15a Audit log page (2026-11-04, 496 passed)
+- Spec approved by owner including the date range filter (owner asked for it; recommendation accepted). Metadata stays hidden in v1 — it lives in the DB and admin already
+- `/audit/` view `audit_list` in `apps/audit/views.py`: `@role_required(OWNER, ADMIN)`; `AuditLog.objects.for_school(request.school)` only, so null-school rows and other schools never show; newest first via model Meta; 25/page with the admissions try/except paging pattern
+- Filters: one `q` box (icontains `actor_label`/`action`/`target_repr`, same pattern as admissions) + optional `from`/`to` date inputs applied as `created_at__date__gte/lte`. Dates parsed with `date.fromisoformat` in try/except — garbage values are dropped silently, never a 500. Pagination is page-local in `templates/audit/list.html` (not the shared component) so q/from/to survive moving between pages; columns When/Who/Action/Target, "—" for blank targets, "system" for blank actors
+- Columns confirmed against `apps/audit/models.py` (`Action` is the `<area>.<verb>` string; `target_repr` up to 200 chars). Nav "Audit log" added after Fees, MANAGERS only (`apps/core/navigation.py` one line); URL include added at `audit/` (namespace `audit`)
+- Tests `apps/audit/test_views.py` (10): anonymous → login, teacher/bursar/parent 403, newest-first order (q-filtered so the force_login signal's `auth.login` noise rows never distort assertions), tenant isolation (school B entry absent with q filter), search matches who/action/target, empty state on no match, date range (row backdated to 2026-01-15 shows inside 10th-20th window and today's row does not; wide from-window shows both), garbage dates ignored, 28 rows → page 1 of 25 + "Showing 1 to 25 of 28" + page 2 has 3, filters survive page 2 links
+- No models, no migrations (`check` + `makemigrations --check` clean); CSS rebuilt; full suite 496 passed
+- Lesson: AuditLog backdating in tests — the model blocks `.update()`/`.delete()`/re-save by design, so the date test backdates via a plain `QuerySet(AuditLog).filter(pk=...).update(...)`, the only write path that bypasses the immutability guard (test-only, never in app code)
+- Commit: `feat: audit log page - read-only list with search and date range, 10 tests`
+- Owner next: open /audit/ in the browser as owner/admin and confirm the table, search, date filters and pagination (teacher/bursar/parent stay 403)
+
+### T14c admin dashboard canvas rebuild committed (2026-11-04, commit `c208a4a`, 486 passed)
+- Checks (`check`, `makemigrations --check`) clean, CSS rebuilt as before; owner approved keeping the "Latest notices" card (not on the canvas) and asked to defer ALL further dashboard design (admin polish + teacher/parent/bursar matches) to a final UI pass after the backend tasks T15→T7e→T16→T17→T18
+- Files: `apps/core/selectors.py`, `apps/core/views.py`, `apps/core/test_dashboard.py`, `templates/core/dashboard.html`, `templates/core/dashboard_sections/manager.html`, `static/css/output.css`
+- Next: T15a audit log page (spec → owner approval → build)
 - Owner compared the browser with `Admin dashboard.png` and said it was different. Work in the working tree right now:
   - Manager dashboard layout matches the canvas: page header `Dashboard` + subtitle `School · session · term` + teal `Register student` button → `students:create`; 4 stat cards **Students / Teachers / Attendance today % / Outstanding fees (amber)**; left card **Fees collected by class** with teal progress bars per class (few `widthratio` collected/expected); right card **Needs your attention**: Results waiting for approval (info chip "N sheets"), New applications to review (warn chip N), Attendance not taken today (bad chip "N classes"); keeps a "Latest notices" card that is NOT in the canvas (decision pending with owner: keep or drop)
   - Selector additions in `apps/core/selectors.py`: `_attendance_today(school)` (present-share formula identical to the attendance page + counts registers not taken today across active classes/sections) and `results_waiting` (sheets submitted/reviewed this period)

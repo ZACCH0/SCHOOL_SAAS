@@ -46,7 +46,7 @@ Types: **REQ** = product requirement, **TECH** = implementation rule, **FUTURE**
  11. [x] Timetable — built 2026-11-03, verified in browser by owner 2026-11-04: per-class grids for the current session; slot = class (optional section override), subject or labelled break/assembly, day + start/end; overlaps refused (class-wide vs section rules); teachers derived from TeacherAssignment (section-exact preferred); archive/restore, never delete; copy to next session (service); managers build, teachers read only their classes + personal "My timetable" page; 36 tests
 12. [ ] Documents with controlled access
 13. [ ] Analytics (student, academic, finance, attendance)
-14. [ ] Audit log
+14. [x] Audit log — read-only page built 2026-11-04 (unverified in browser): owner/admin only, newest first, search + date range, paginated 25/page, tenant isolated; the recording itself existed since H3
 15. [ ] REST API (only where it adds value)
 16. [ ] Production deployment (Render), backups, HTTPS
 
