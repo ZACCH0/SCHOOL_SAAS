@@ -14,6 +14,7 @@ from apps.subjects.models import Subject, TeacherAssignment
 
 from .forms import SlotForm
 from .models import TimetableSlot
+from .selectors import covering_slots
 from .services import create_slot, set_slot_active
 
 Role = Membership.Role
@@ -147,30 +148,8 @@ def my_timetable(request):
     if session is None:
         return render(request, "timetable/my.html", {"no_session": True})
 
-    assignments = TeacherAssignment.objects.filter(
-        school=request.school, session=session, teacher=request.membership,
-    )
-    slots = (
-        TimetableSlot.objects.filter(
-            school=request.school, session=session, is_active=True,
-            subject__isnull=False,
-        )
-        .select_related("subject", "section", "school_class")
-        .order_by("day", "starts_at")
-    )
-    mine = []
-    for slot in slots:
-        covered = any(
-            a.school_class_id == slot.school_class_id
-            and a.subject_id == slot.subject_id
-            and (a.section_id is None or a.section_id == slot.section_id)
-            for a in assignments
-        )
-        if covered:
-            mine.append(slot)
-
     by_day = {}
-    for slot in mine:
+    for slot in covering_slots(request.school, session, request.membership):
         by_day.setdefault(slot.day, []).append(slot)
     entries = [
         {"name": TimetableSlot.WeekDay(day).label, "slots": by_day[day]}

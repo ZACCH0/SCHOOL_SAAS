@@ -1,0 +1,52 @@
+{% load humanize %}
+<div class="space-y-5">
+  {% if children %}
+    <div class="grid gap-3 sm:grid-cols-2">
+      {% for child in children %}
+        <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-line">
+          <a href="{% url 'portal:child' child.pupil.pk %}" class="text-lg font-bold text-brand-700 hover:underline">
+            {{ child.pupil.first_name }} {{ child.pupil.last_name }}
+          </a>
+          <p class="mt-1 text-sm text-slate-600">
+            {{ child.pupil.current_class|default:"No class yet" }}{% if child.pupil.current_section %} &middot; {{ child.pupil.current_section }}{% endif %}
+          </p>
+          <dl class="mt-3 space-y-1 text-sm">
+            <div class="flex justify-between">
+              <dt class="text-muted">Published results this term</dt>
+              <dd class="font-semibold text-ink">{{ child.published_results }}</dd>
+            </div>
+            <div class="flex justify-between">
+              <dt class="text-muted">Fee balance</dt>
+              <dd class="font-extrabold {% if child.owed and child.owed > 0 %}text-warn{% else %}text-ok{% endif %}">
+                &#8358;{{ child.owed|intcomma }}
+              </dd>
+            </div>
+          </dl>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="rounded-lg bg-slate-100 px-4 py-3 text-sm text-slate-600">No children are linked to your account yet. The school office links them through your ward's record.</p>
+  {% endif %}
+  {% if not period %}
+    <p class="rounded-lg bg-amber-100 px-4 py-3 text-sm text-warn">No term is marked current yet &mdash; term totals appear once a session and term are set up.</p>
+  {% endif %}
+
+  <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-line">
+    <h2 class="text-lg font-bold">Latest notices</h2>
+    {% if notices %}
+      <ul class="mt-3 divide-y divide-line">
+        {% for notice in notices %}
+          <li class="py-2 first:pt-0">
+            <a href="{% url 'announcements:list' %}" class="block">
+              <span class="font-semibold text-brand-700 hover:underline">{{ notice.title }}</span>
+              <span class="ml-2 text-xs text-muted">{{ notice.created_at|date:"d M Y" }} &middot; {{ notice.get_audience_display }}</span>
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="mt-2 text-sm text-muted">No notices yet.</p>
+    {% endif %}
+  </div>
+</div>

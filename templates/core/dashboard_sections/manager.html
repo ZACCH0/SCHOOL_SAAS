@@ -1,0 +1,61 @@
+{% load humanize %}
+<div class="space-y-5">
+  <div class="grid gap-3 sm:grid-cols-3">
+    <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-line">
+      <p class="text-sm text-muted">Active students</p>
+      <p class="mt-1 text-3xl font-bold tracking-tight text-ink">{{ students }}</p>
+      <a href="{% url 'students:list' %}" class="mt-2 inline-block text-sm font-medium text-brand-700 hover:underline">Open students</a>
+    </div>
+    <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-line">
+      <p class="text-sm text-muted">Teachers</p>
+      <p class="mt-1 text-3xl font-bold tracking-tight text-ink">{{ teachers }}</p>
+    </div>
+    <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-line">
+      <p class="text-sm text-muted">Admissions waiting</p>
+      <p class="mt-1 text-3xl font-bold tracking-tight {% if admissions_waiting %}text-warn{% else %}text-ink{% endif %}">{{ admissions_waiting }}</p>
+      <p class="mt-1 text-sm text-muted">Applied or reviewed</p>
+      <a href="{% url 'admissions:list' %}" class="mt-2 inline-block text-sm font-medium text-brand-700 hover:underline">Open admissions</a>
+    </div>
+  </div>
+
+  <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-line">
+      <p class="text-sm text-muted">Expected this term</p>
+      <p class="mt-1 text-2xl font-extrabold text-ink">&#8358;{{ fees.expected|intcomma }}</p>
+    </div>
+    <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-line">
+      <p class="text-sm text-muted">Collected</p>
+      <p class="mt-1 text-2xl font-extrabold text-ok">&#8358;{{ fees.collected|intcomma }}</p>
+    </div>
+    <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-line">
+      <p class="text-sm text-muted">Outstanding</p>
+      <p class="mt-1 text-2xl font-extrabold {% if fees.outstanding %}text-warn{% else %}text-ink{% endif %}">&#8358;{{ fees.outstanding|intcomma }}</p>
+    </div>
+    <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-line">
+      <p class="text-sm text-muted">Collection rate</p>
+      <p class="mt-1 text-2xl font-extrabold text-ink">{% if fees.rate is not None %}{{ fees.rate }}%{% else %}&mdash;{% endif %}</p>
+      <a href="{% url 'fees:home' %}" class="mt-2 inline-block text-sm font-medium text-brand-700 hover:underline">Open fees</a>
+    </div>
+  </div>
+  {% if not period %}
+    <p class="rounded-lg bg-amber-100 px-4 py-3 text-sm text-warn">No term is marked current yet &mdash; finance and results totals appear once a session and term are set up.</p>
+  {% endif %}
+
+  <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-line">
+    <h2 class="text-lg font-bold">Latest notices</h2>
+    {% if notices %}
+      <ul class="mt-3 divide-y divide-line">
+        {% for notice in notices %}
+          <li class="py-2 first:pt-0">
+            <a href="{% url 'announcements:list' %}" class="block">
+              <span class="font-semibold text-brand-700 hover:underline">{{ notice.title }}</span>
+              <span class="ml-2 text-xs text-muted">{{ notice.created_at|date:"d M Y" }} &middot; {{ notice.get_audience_display }}</span>
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="mt-2 text-sm text-muted">No notices yet.</p>
+    {% endif %}
+  </div>
+</div>
