@@ -2,8 +2,10 @@
 
 Single source of truth for where the project stands. Rules for updating it are in `AGENTS.md` section 9.
 
-**Last updated:** 2026-11-04 (T15b documents built — 517 passing; owner to verify in browser; also found a settings typo to fix, see known issues)
+**Last updated:** 2026-11-04 (T15b documents VERIFIED by owner; next: T7e login by phone/email spec)
 **Current phase:** Modules 1-4 hard complete. Owner decision 2026-11-04: FINISH the remaining backend first (T15 → T7e → T16 → T17 → T18), THEN one final UI pass to canvas (dashboards incl. admin polish, teacher/parent/bursar matches, T7d/T10/T13 browser verifications roll in there). "Latest notices" card KEPT on the manager dashboard (owner decision 2026-11-04).
+**Current task:** T15 closed (audit log verified, documents verified; analytics stays optional — spec first if owner wants it).
+**Next task (exact steps):** 1) spec T7e login by phone or email with password + one-time codes for activation/password reset (owner agreed the plan earlier; email free, SMS paid) → owner approval 2) build + tests 3) commit 4) T16 security hardening → T17 REST API → T18 production deployment → final UI pass.
 **Current task:** T15b documents — DONE (unverified in browser). Owner to check: upload as owner, open as parent/teacher/bursar, take down; teacher must never see managers-only docs.
 **Next task (exact steps):** 1) fix the `AXES_COOLbOFF_TIME` typo in `config/settings/base.py:111` (`AXES_COOLOFF_TIME`) — lockout time was silently ignored; add/verify a test for the 15-min unlock 2) owner verification of T15b in the browser 3) T15 analytics is optional/later — next agreed backend task is T7e login by phone/email (spec → approval → build) → T16 → T17 → T18 → final UI pass.
 
@@ -30,7 +32,7 @@ Single source of truth for where the project stands. Rules for updating it are i
 | T12 | Assessments, results, grading, workflow, report cards (PDF) | DONE (verified) | T12a verified 2026-10-28; T12b/c workflow + notifications verified in browser; T12d PDF verified; T12e ranking/totals/attendance + HTML restyle approved by owner 2026-10-30. 381 tests passed |
 | T13 | Finance: fee structures, invoices, payments, receipts, balances | DONE (unverified by owner in browser) | T13a model, T13b services, T13c pages. 257 tests passed on 2026-10-26; idempotent payments, no overpay, audit, tenant isolation |
 | T14 | Dashboards, announcements, notifications, timetable | IN PROGRESS | T14a verified 2026-11-03 (`4800bdc`); T14b verified 2026-11-04 (36 timetable tests); T14c dashboards DONE (unverified) — 486 suite |
-| T15 | Documents, analytics, audit log — T15a audit log DONE (verified by owner), T15b documents DONE (unverified) | IN PROGRESS | 10 audit + 21 documents tests; 517 passed |
+| T15 | Documents, analytics, audit log — T15a audit log DONE (verified by owner), T15b documents DONE (verified by owner 2026-11-04) | IN PROGRESS (analytics optional/later) | 10 audit + 21 documents tests; 517 passed |
 | T16 | Security hardening (login attempt limiting, backups, file security, production settings) | TODO | |
 | T17 | REST API (only where useful) | TODO | |
 | T18 | Production deployment (Render) and school pilot | TODO | |
@@ -51,6 +53,15 @@ Single source of truth for where the project stands. Rules for updating it are i
 | P3 | Parent portal step 3: report card HTML + PDF for linked parents | DONE (verified) | Owner opened/downloaded the PDF from the portal; label size fixed on their feedback. 20 portal tests; 376 passed |
 
 ## Task log (newest first)
+
+### T15b documents VERIFIED by owner (2026-11-04, docs only)
+- Owner walked the documents pages and confirmed "DONE verified". T15b marked DONE (verified). No code changes; suite stands at 517 passed.
+- T15 module closed: audit log (verified) + documents (verified). Analytics left optional — owner decides later.
+
+### Fix: login lockout time was silently ignored (2026-11-04, commit `18f793b`)
+- `AXES_COOLbOFF_TIME` typo in `config/settings/base.py` meant django-axes never received the 15-minute value — lockout duration used library defaults. Confirmed the setting is NOT read under the typo name (axes reads `AXES_COOLOFF_TIME`)
+- Fixed the spelling; added regression test `test_lockout_time_is_actually_configured` to `apps/accounts/test_lockout.py` (a settings assert is the right guard: the failure mode is "setting missing", which no functional lockout test caught). 5 lockout tests pass
+- Owner advised of the change; agreed direction was "fix it now as its own tiny commit"
 
 ### T15b Documents with controlled access (2026-11-04, 517 passed)
 - Spec approved by owner over T15b discussion: 3 audiences (Managers only / All staff / Everyone incl. parents; per-class targeting deferred), LOCAL file storage now with cloud (Cloudflare R2 free tier recommended) deferred to T18 — the decision rationale: serve downloads through the view so the storage swap later is settings-only
