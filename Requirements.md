@@ -24,7 +24,7 @@ Types: **REQ** = product requirement, **TECH** = implementation rule, **FUTURE**
 ## 3. Foundation (current phase)
 
 - [x] Project structure, split settings, `.env` secrets, PostgreSQL, pytest config
-- [x] Custom User (username login, optional email and phone) — built and verified; T7e added 2026-11-10: login and password reset accept username, email or phone; one-time codes (email free, SMS console until T18) for activation and password reset; DONE (unverified in browser)
+- [x] Custom User (username login, optional email and phone) — built and verified; T7e added 2026-11-10: login and password reset accept username, email or phone; one-time codes (email free, SMS console until T18) for activation and password reset; OWNER VERIFIED 2026-11-10
 - [x] Login attempt limiting and audit log (H2/H3)
 - [ ] School (tenant) model
 - [ ] Membership (user, school, role)

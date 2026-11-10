@@ -2,12 +2,10 @@
 
 Single source of truth for where the project stands. Rules for updating it are in `AGENTS.md` section 9.
 
-**Last updated:** 2026-11-10 (password show/hide eye toggle on all password fields; T7e browser verification in progress)
+**Last updated:** 2026-11-10 (T7e VERIFIED by owner in the browser; next: T16 security hardening)
 **Current phase:** Modules 1-4 hard complete. Owner decision 2026-11-04: FINISH the remaining backend first (T15 → T7e → T16 → T17 → T18), THEN one final UI pass to canvas (dashboards incl. admin polish, teacher/parent/bursar matches, T7d/T10/T13 browser verifications roll in there). "Latest notices" card KEPT on the manager dashboard (owner decision 2026-11-04).
-**Current task:** T7e login by phone/email with one-time codes — DONE (being verified in browser; SMS shows in the dev console by design, real provider at T18).
-**Next task (exact steps):** 1) owner browser verification of T7e: log in with an email and a phone, request a reset for a phone-only user (SMS code prints to the console log in dev), enter the code, set a new password 2) T16 security hardening → T17 REST API → T18 production deployment → final UI pass.
-**Current task:** T15b documents — DONE (unverified in browser). Owner to check: upload as owner, open as parent/teacher/bursar, take down; teacher must never see managers-only docs.
-**Next task (exact steps):** 1) fix the `AXES_COOLbOFF_TIME` typo in `config/settings/base.py:111` (`AXES_COOLOFF_TIME`) — lockout time was silently ignored; add/verify a test for the 15-min unlock 2) owner verification of T15b in the browser 3) T15 analytics is optional/later — next agreed backend task is T7e login by phone/email (spec → approval → build) → T16 → T17 → T18 → final UI pass.
+**Current task:** T7e login by phone/email with one-time codes — DONE (owner verified 2026-11-10). Next: T16 spec → owner approval → build.
+**Next task (exact steps):** 1) T16 security hardening: spec → owner approval → build 2) T17 REST API (only where useful) → T18 production deployment on Render (wire the real SMS provider) → final UI pass to canvas.
 
 ## Task boardStatuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 
@@ -36,7 +34,7 @@ Single source of truth for where the project stands. Rules for updating it are i
 | T16 | Security hardening (login attempt limiting, backups, file security, production settings) | TODO | |
 | T17 | REST API (only where useful) | TODO | |
 | T18 | Production deployment (Render) and school pilot | TODO | |
-| T7e | Login by phone or email with password; one-time codes (email free, SMS paid) only for activation and password reset; per-school SMS credit and rate limits | DONE (unverified in browser) | Commit `3da4f47`; 66 accounts tests; 559 suite |
+| T7e | Login by phone or email with password; one-time codes (email free, SMS paid) only for activation and password reset; per-school SMS credit and rate limits | DONE (owner verified 2026-11-10) | Commit `3da4f47`; 66 accounts tests; 559 suite |
 | H1 | Production settings file and clean `check --deploy` | DONE (verified) | 78 passed; check --deploy has no errors, only W005/W021 (HSTS subdomains and preload) left on purpose until deployment |
 | H2 | Login attempt limiting (django-axes, 5 failures per username+IP, 15 minute lock) | DONE (verified) | 82 passed |
 | H3 | Audit log foundation (`apps/audit`: append-only AuditLog, `record()` service, login/logout signals, read-only admin) | DONE (verified) | 92 passed |
@@ -53,6 +51,12 @@ Single source of truth for where the project stands. Rules for updating it are i
 | P3 | Parent portal step 3: report card HTML + PDF for linked parents | DONE (verified) | Owner opened/downloaded the PDF from the portal; label size fixed on their feedback. 20 portal tests; 376 passed |
 
 ## Task log (newest first)
+
+### T7e VERIFIED by owner (2026-11-10, docs only)
+- Owner approved T7e in the browser (they said "approved"). Marked DONE (verified) in the board and REQUIREMENTS.md. No code changes.
+- Owner also requested during verification: a show/hide eye on password fields — done as its own commit `70b2aa4` (next entry below).
+- SMS delivery is console-only in dev BY DESIGN until T18 — owner understood the code shows in the terminal during the reset check.
+- Next: T16 security hardening (spec → approval → build).
 
 ### Password show/hide eye toggle (2026-11-10, owner request during T7e verification, 559 passed)
 - Eye/eye-off button on every password box: login (T7e identifier + password), reset "Choose a new password" (both fields), forced temporary-password change page. Toggle flips the input type and swaps the icon; name discarded, `aria-label` follows state
