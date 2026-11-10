@@ -2,10 +2,10 @@
 
 Single source of truth for where the project stands. Rules for updating it are in `AGENTS.md` section 9.
 
-**Last updated:** 2026-11-10 (T7e VERIFIED by owner in the browser; next: T16 security hardening)
+**Last updated:** 2026-11-10 (T16 built; owner to verify db_backup in a terminal + green CI run after push, then T17 spec)
 **Current phase:** Modules 1-4 hard complete. Owner decision 2026-11-04: FINISH the remaining backend first (T15 → T7e → T16 → T17 → T18), THEN one final UI pass to canvas (dashboards incl. admin polish, teacher/parent/bursar matches, T7d/T10/T13 browser verifications roll in there). "Latest notices" card KEPT on the manager dashboard (owner decision 2026-11-04).
-**Current task:** T7e login by phone/email with one-time codes — DONE (owner verified 2026-11-10). Next: T16 spec → owner approval → build.
-**Next task (exact steps):** 1) T16 security hardening: spec → owner approval → build 2) T17 REST API (only where useful) → T18 production deployment on Render (wire the real SMS provider) → final UI pass to canvas.
+**Current task:** T16 security hardening — DONE (unverified): db_backup command + lockout regression test committed `12d30b3`; GitHub Actions CI committed `188e453` (H6). Also closed a full-disk stall that had masked T16's completion.
+**Next task (exact steps):** 1) Owner verifies T16: run `python manage.py db_backup --force` in a terminal (dump file appears under `backups/`, rotation keeps 7) and push to GitHub so the `tests` workflow goes green. 2) Then T17 REST API (only where useful) spec → owner approval → build. 3) T18 production deployment on Render (wire the real SMS provider). 4) Final UI pass to canvas.
 
 ## Task boardStatuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 
@@ -31,16 +31,16 @@ Single source of truth for where the project stands. Rules for updating it are i
 | T13 | Finance: fee structures, invoices, payments, receipts, balances | DONE (unverified by owner in browser) | T13a model, T13b services, T13c pages. 257 tests passed on 2026-10-26; idempotent payments, no overpay, audit, tenant isolation |
 | T14 | Dashboards, announcements, notifications, timetable | IN PROGRESS | T14a verified 2026-11-03 (`4800bdc`); T14b verified 2026-11-04 (36 timetable tests); T14c dashboards DONE (unverified) — 486 suite |
 | T15 | Documents, analytics, audit log — T15a audit log DONE (verified by owner), T15b documents DONE (verified by owner 2026-11-04) | IN PROGRESS (analytics optional/later) | 10 audit + 21 documents tests; 517 passed |
-| T16 | Security hardening (login attempt limiting, backups, file security, production settings) | TODO | |
-| T17 | REST API (only where useful) | TODO | |
-| T18 | Production deployment (Render) and school pilot | TODO | |
+| T16 | Security hardening (login attempt limiting, backups, file security, production settings) | DONE (unverified in terminal) | db_backup + rotation + DEBUG guard, 7 tests, commit `12d30b3`; identifier-lockout regression test; H1-H5 already covered axes/audit/file security/prod settings — final verification is the owner running `db_backup` once |
+| T17 | REST API (only where useful) | TODO | Spec next |
+| T18 | Production deployment (Render) and school pilot | TODO | CI workflow ready for `tests` on push |
 | T7e | Login by phone or email with password; one-time codes (email free, SMS paid) only for activation and password reset; per-school SMS credit and rate limits | DONE (owner verified 2026-11-10) | Commit `3da4f47`; 66 accounts tests; 559 suite |
 | H1 | Production settings file and clean `check --deploy` | DONE (verified) | 78 passed; check --deploy has no errors, only W005/W021 (HSTS subdomains and preload) left on purpose until deployment |
-| H2 | Login attempt limiting (django-axes, 5 failures per username+IP, 15 minute lock) | DONE (verified) | 82 passed |
+| H2 | Login attempt limiting (django-axes, 5 failures per username+IP, 15 minute lock) | DONE (verified) | 82 passed; T16 added the email/phone identifier lockout regression test |
 | H3 | Audit log foundation (`apps/audit`: append-only AuditLog, `record()` service, login/logout signals, read-only admin) | DONE (verified) | 92 passed |
 | H4 | Safe lookup helpers for views (`get_for_school_or_404`, `SchoolScopedMixin`, `RoleRequiredMixin`) | DONE (verified) | 78 passed |
 | H5 | Logging to console (platform captures it) with levels from env; error alert emails come at deployment | DONE (verified) | Owner confirmed pytest works; test count not shown (94 expected). Test suite also uses a fast hasher via `config/settings/test.py` |
-| H6 | GitHub Actions running tests on every push | IN PROGRESS | Code provided |
+| H6 | GitHub Actions running tests on every push | DONE (unverified) | Workflow `.github/workflows/tests.yml` committed `188e453` (green run still to be seen after push) |
 | T19 | UI: apply brand palette and app shell to real templates (phases U0 to U2) | DONE (verified) | U0, U1 (58 passed), U2 (68 passed). Real pages are built by the owner with OpenCode from the design canvas |
 | T19b | Nav shell rebuilt to canvas: desktop sidebar (no top bar), tablet Menu drawer, phone bottom tab bar for ALL roles | DONE (unverified in browser) | +4 tests in app shell, 440 passed |
 | T20 | Profile photos for students, teachers, parents (needs Pillow and file storage) | TODO | |
@@ -51,6 +51,15 @@ Single source of truth for where the project stands. Rules for updating it are i
 | P3 | Parent portal step 3: report card HTML + PDF for linked parents | DONE (verified) | Owner opened/downloaded the PDF from the portal; label size fixed on their feedback. 20 portal tests; 376 passed |
 
 ## Task log (newest first)
+
+### T16 security hardening closed as built; disk full found and cleared (2026-11-10, 567 passed)
+- Found the previous session's T16 work uncommitted in the tree, and 5 of its 7 backup tests failing. Root cause: `dumpdata` (called inside `db_backup`) needs DB access, and pytest-django refuses it without the `@pytest.mark.django_db` mark — the tests were missing it. Added the mark to the 5 data-touching tests; no app-logic change
+- Work landed in commit `12d30b3`: `apps/core/management/commands/db_backup.py` (dumpdata JSON dump, natural keys, excludes contenttypes/permissions, keeps newest N (+7 default), refuses under DEBUG unless `--force`), tests `apps/core/test_backup_command.py` (7 incl. rotation and never touching unrelated files), settings `BACKUP_DIR`, `.env.example`, `backups/` git-ignored, and a T16 regression test in `apps/accounts/test_lockout.py`: after T7e, logging in with an EMAIL identifier still locks the account after 5 attempts (axes locks the resolved username, not the typed identifier)
+- Also closed H6 in commit `188e453`: the GitHub Actions workflow was never committed ("code provided" had been lost). New `.github/workflows/tests.yml` — ubuntu-latest, Python 3.11, real PostgreSQL 16 service, WeasyPrint pango libs, then `check` + `makemigrations --check` + `pytest -q`. New `requirements.txt` (pins of the working venv; none existed before)
+- Environment incident: C: drive was 0 GB free, pytest died with `OSError: Errno 28 no space left on device` (mass of E errors that looked like real failures). Owner emptied the Recycle Bin — 11.7 GB freed. LESSON: a wall of E errors can be environmental; check disk space before debugging test logic
+- Checks clean, `makemigrations --check` clean; suite 567 passed (549 + 7 backup + 1 lockout regression + rest)
+- Owner verification steps: `python manage.py db_backup --force` in a terminal (real dump under `backups/`), and push so the `tests` workflow goes green in the Actions tab
+- Commits: `12d30b3`, `188e453`
 
 ### T7e VERIFIED by owner (2026-11-10, docs only)
 - Owner approved T7e in the browser (they said "approved"). Marked DONE (verified) in the board and REQUIREMENTS.md. No code changes.
