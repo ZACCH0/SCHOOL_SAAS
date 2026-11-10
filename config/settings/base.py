@@ -101,6 +101,8 @@ STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
+# Where `db_backup` writes its dumps (None = ./backups next to manage.py).
+BACKUP_DIR = config("BACKUP_DIR", default=None)
 AUTH_USER_MODEL = "accounts.User"
 AUTHENTICATION_BACKENDS = [
     "axes.backends.AxesStandaloneBackend",  # must come first

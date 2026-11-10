@@ -52,3 +52,16 @@ def test_lockout_time_is_actually_configured():
     from django.conf import settings
 
     assert settings.AXES_COOLOFF_TIME == timedelta(minutes=15)
+
+@pytest.mark.django_db
+def test_lockout_covers_login_by_email(client, teacher):
+    """T16: T7e resolved every identifier to the username before authenticating,
+    so axes must lock an account no matter whether the attacker typed a username,
+    email or phone."""
+    User.objects.filter(pk=teacher.pk).update(email="teacher1@example.com")
+    teacher.refresh_from_db()
+    for _ in range(5):
+        attempt(client, "teacher1@example.com", "wrong")
+    response = attempt(client, "teacher1@example.com", GOOD)
+    assert response.status_code == 429
+    assert "_auth_user_id" not in client.session
