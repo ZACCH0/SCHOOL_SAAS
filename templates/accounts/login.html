@@ -14,7 +14,7 @@
       </p>
     {% endif %}
     <div>
-      <label for="id_username" class="block text-sm font-medium">Username</label>
+      <label for="id_username" class="block text-sm font-medium">Username, email or phone</label>
       <input type="text" name="username" id="id_username" required autofocus
              autocomplete="username" value="{{ form.username.value|default_if_none:'' }}"
              class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-brand-600 focus:outline-none">

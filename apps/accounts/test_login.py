@@ -38,3 +38,54 @@ def test_logout_post_logs_user_out(client, user):
     response = client.post(reverse("accounts:logout"))
     assert response.status_code == 302
     assert "_auth_user_id" not in client.session
+
+
+@pytest.mark.django_db
+def test_login_with_email_identifier(client):
+    User.objects.create_user(
+        "tayo", email="tayo@example.com", password="S3cure-pass!"
+    )
+    response = client.post(
+        reverse("accounts:login"),
+        {"username": "TAYO@example.com", "password": "S3cure-pass!"},
+    )
+    assert response.status_code == 302
+    assert "_auth_user_id" in client.session
+
+
+@pytest.mark.django_db
+def test_login_with_phone_identifier_in_any_format(client):
+    User.objects.create_user(
+        "halima", phone="0803 123 4567", password="S3cure-pass!"
+    )
+    for typed in ("08031234567", "+234-803-123-4567"):
+        response = client.post(
+            reverse("accounts:login"),
+            {"username": typed, "password": "S3cure-pass!"},
+        )
+        assert response.status_code == 302
+        assert "_auth_user_id" in client.session
+        client.logout()
+
+
+@pytest.mark.django_db
+def test_login_with_unknown_identifier_shows_generic_error(client, user):
+    response = client.post(
+        reverse("accounts:login"), {"username": "ghost", "password": "S3cure-pass!"}
+    )
+    assert response.status_code == 200
+    assert "_auth_user_id" not in client.session
+    assert b"Wrong username or password" in response.content
+
+
+@pytest.mark.django_db
+def test_login_with_correct_password_but_wrong_case_email_fails(client):
+    User.objects.create_user(
+        "tayo", email="tayo@example.com", password="S3cure-pass!"
+    )
+    response = client.post(
+        reverse("accounts:login"),
+        {"username": "tayo@other.com", "password": "S3cure-pass!"},
+    )
+    assert response.status_code == 200
+    assert "_auth_user_id" not in client.session

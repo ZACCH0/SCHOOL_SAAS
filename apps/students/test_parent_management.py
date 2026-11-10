@@ -65,7 +65,9 @@ def test_create_parent_creates_user_membership_and_audit(client, school_a, login
     assert user.first_name == "Kola"
     assert user.check_password("S3cure-pass!")
     assert user.email == "kola@example.com"
-    assert user.phone == "08012345678"
+    # T7e: phones are stored in one canonical shape (+234...) so
+    # logging in with a differently formatted phone still matches.
+    assert user.phone == "+2348012345678"
     assert Membership.objects.filter(
         school=school_a, user=user, role=ROLE.PARENT
     ).exists()

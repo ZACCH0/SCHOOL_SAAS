@@ -1,13 +1,14 @@
 from django.contrib.auth import views as auth_views
 from django.urls import path, reverse_lazy
 
-from . import views
+from . import forms, views
 
 app_name = "accounts"
 urlpatterns = [
     path(
         "login/",
         auth_views.LoginView.as_view(
+            form_class=forms.IdentifierAuthenticationForm,
             template_name="accounts/login.html",
             redirect_authenticated_user=True,
         ),
@@ -18,14 +19,15 @@ urlpatterns = [
     path("members/<int:pk>/reset-password/", views.member_password_reset, name="member_password_reset"),
     path(
         "password-reset/",
-        auth_views.PasswordResetView.as_view(
-            template_name="accounts/password_reset_form.html",
-            email_template_name="accounts/password_reset_email.txt",
-            subject_template_name="accounts/password_reset_subject.txt",
-            success_url=reverse_lazy("accounts:password_reset_done"),
-        ),
+        views.password_reset_start,
         name="password_reset",
     ),
+    path(
+        "password-reset/code/",
+        views.password_reset_code,
+        name="password_reset_code",
+    ),
+    path("activate/<uidb64>/", views.activate, name="activate"),
     path(
         "password-reset/sent/",
         auth_views.PasswordResetDoneView.as_view(
