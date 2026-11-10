@@ -24,7 +24,8 @@ Types: **REQ** = product requirement, **TECH** = implementation rule, **FUTURE**
 ## 3. Foundation (current phase)
 
 - [x] Project structure, split settings, `.env` secrets, PostgreSQL, pytest config
-- [ ] Custom User (username login, optional email and phone) *(built; confirm tests pass)*
+- [x] Custom User (username login, optional email and phone) — built and verified; T7e added 2026-11-10: login and password reset accept username, email or phone; one-time codes (email free, SMS console until T18) for activation and password reset; DONE (unverified in browser)
+- [x] Login attempt limiting and audit log (H2/H3)
 - [ ] School (tenant) model
 - [ ] Membership (user, school, role)
 - [ ] Tenant-scoped queries/managers and tenant isolation tests
@@ -42,7 +43,7 @@ Types: **REQ** = product requirement, **TECH** = implementation rule, **FUTURE**
 7. [x] Report cards (PDF) — DONE (verified) 2026-10-29 (WeasyPrint A4 terminal report); redesigned + matching HTML page 2026-10-30
 8. [x] Finance: fee structure, invoice, invoice items, payments, payment allocation, receipt, balance (full and partial payment, manual recording) — DONE (unverified in browser) 2026-10-26
 9. [x] Dashboards (admin, teacher, parent) using real data only — built 2026-11-04 (DONE, unverified in browser): one /dashboard/ URL, role sections for owner/admin, bursar, teacher, parent; current-term scoped, tenant isolated, 10 tests; no charts (stat cards only)
-10. [ ] Announcements and in-app notifications — announcements DONE (verified in browser) 2026-11-03 (built 2026-11-02): audience notices (everyone/staff/teachers/parents), bell fan-out via notifications app, archive takedown; in-app notifications to individuals existed since the results workflow
+10. [x] Announcements and in-app notifications — announcements DONE (verified in browser) 2026-11-03 (built 2026-11-02): audience notices (everyone/staff/teachers/parents), bell fan-out via notifications app, archive takedown; in-app notifications to individuals existed since the results workflow
  11. [x] Timetable — built 2026-11-03, verified in browser by owner 2026-11-04: per-class grids for the current session; slot = class (optional section override), subject or labelled break/assembly, day + start/end; overlaps refused (class-wide vs section rules); teachers derived from TeacherAssignment (section-exact preferred); archive/restore, never delete; copy to next session (service); managers build, teachers read only their classes + personal "My timetable" page; 36 tests
 12. [x] Documents with controlled access — built 2026-11-04, owner-verified in browser (DONE, verified): owner/admin upload + archive, audiences managers/all staff/everyone, server-checked downloads (no direct media URLs), extension+size guards, tenant isolated, audited, 21 tests (local storage; Cloudinary/R2 planned for T18)
 13. [ ] Analytics (student, academic, finance, attendance)

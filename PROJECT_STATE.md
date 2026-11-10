@@ -2,10 +2,10 @@
 
 Single source of truth for where the project stands. Rules for updating it are in `AGENTS.md` section 9.
 
-**Last updated:** 2026-11-04 (T15b documents VERIFIED by owner; next: T7e login by phone/email spec)
+**Last updated:** 2026-11-10 (T7e login by phone/email + one-time codes built, 559 passed — owner to verify in browser; next: T16 security hardening)
 **Current phase:** Modules 1-4 hard complete. Owner decision 2026-11-04: FINISH the remaining backend first (T15 → T7e → T16 → T17 → T18), THEN one final UI pass to canvas (dashboards incl. admin polish, teacher/parent/bursar matches, T7d/T10/T13 browser verifications roll in there). "Latest notices" card KEPT on the manager dashboard (owner decision 2026-11-04).
-**Current task:** T15 closed (audit log verified, documents verified; analytics stays optional — spec first if owner wants it).
-**Next task (exact steps):** 1) spec T7e login by phone or email with password + one-time codes for activation/password reset (owner agreed the plan earlier; email free, SMS paid) → owner approval 2) build + tests 3) commit 4) T16 security hardening → T17 REST API → T18 production deployment → final UI pass.
+**Current task:** T7e login by phone/email with one-time codes — DONE (unverified in browser).
+**Next task (exact steps):** 1) owner browser verification of T7e: log in with an email and a phone, request a reset for a phone-only user (SMS code prints to the console log in dev), enter the code, set a new password 2) T16 security hardening → T17 REST API → T18 production deployment → final UI pass.
 **Current task:** T15b documents — DONE (unverified in browser). Owner to check: upload as owner, open as parent/teacher/bursar, take down; teacher must never see managers-only docs.
 **Next task (exact steps):** 1) fix the `AXES_COOLbOFF_TIME` typo in `config/settings/base.py:111` (`AXES_COOLOFF_TIME`) — lockout time was silently ignored; add/verify a test for the 15-min unlock 2) owner verification of T15b in the browser 3) T15 analytics is optional/later — next agreed backend task is T7e login by phone/email (spec → approval → build) → T16 → T17 → T18 → final UI pass.
 
@@ -36,7 +36,7 @@ Single source of truth for where the project stands. Rules for updating it are i
 | T16 | Security hardening (login attempt limiting, backups, file security, production settings) | TODO | |
 | T17 | REST API (only where useful) | TODO | |
 | T18 | Production deployment (Render) and school pilot | TODO | |
-| T7e | Login by phone or email with password; one-time codes (email free, SMS paid) only for activation and password reset; per-school SMS credit and rate limits | TODO (agreed) | Owner agreed the plan |
+| T7e | Login by phone or email with password; one-time codes (email free, SMS paid) only for activation and password reset; per-school SMS credit and rate limits | DONE (unverified in browser) | Commit `3da4f47`; 66 accounts tests; 559 suite |
 | H1 | Production settings file and clean `check --deploy` | DONE (verified) | 78 passed; check --deploy has no errors, only W005/W021 (HSTS subdomains and preload) left on purpose until deployment |
 | H2 | Login attempt limiting (django-axes, 5 failures per username+IP, 15 minute lock) | DONE (verified) | 82 passed |
 | H3 | Audit log foundation (`apps/audit`: append-only AuditLog, `record()` service, login/logout signals, read-only admin) | DONE (verified) | 92 passed |
@@ -53,6 +53,15 @@ Single source of truth for where the project stands. Rules for updating it are i
 | P3 | Parent portal step 3: report card HTML + PDF for linked parents | DONE (verified) | Owner opened/downloaded the PDF from the portal; label size fixed on their feedback. 20 portal tests; 376 passed |
 
 ## Task log (newest first)
+
+### T7e Login by phone/email + one-time codes finished and committed (2026-11-10, commit `3da4f47`, 559 passed)
+- Resumed the uncommitted T7e work found in the tree from the 2026-11-09 session and finished it
+- What the feature does: login box now accepts username, email or phone (resolve → authenticate the resolved username so django-axes locks exactly as before); password reset page takes one identifier too — email user gets the unchanged T7c emailed link (free), phone-only user gets a 6-digit SMS code (10 min TTL, single use, 5 wrong entries void it, max 5 codes per user+purpose per hour); activation link `accounts:activate/<uidb64>/` for users created with unusable passwords now actually issues a code before the choose-password step
+- New: `apps/accounts/identification.py` (resolve_user, AmbiguousIdentifier), `normalization.py` (Nigerian phones → +234…), `channels.py` (email sender real; SMS sender console-only until T18 so nothing paid can happen in dev), `forms.py` (IdentifierAuthenticationForm, IdentifierForm); models `OneTimeCode` (hashed code, purpose, attempts) + `SmsLog` (per-school billing, null when memberships are 0 or >1); migration `accounts.0003` (already applied to dev DB)
+- Bugs fixed while finishing: phones were stored as typed so normalized lookups missed them → `User.save()` now normalizes (test updated in students parent test); email-path reset used Django's default `registration/` templates that do not exist here → now passes the project's `accounts/password_reset_*.txt` (failure was hidden by the deliberate generic-response `except`); activation flow never sent its code → issue on link visit, no-channel users redirected to login (office should use T7d temp password for those)
+- Tests: `test_identification.py` (9: normalization matrix, username/email/phone resolution, unknown → None, duplicate email/phone refused by DB constraint incl. case-insensitive), `test_codes.py` (14: hash-only storage, new code expires the previous, no-channel refuse, email/SMS channels, 6th code refused, rate limit per purpose, SmsLog school attribution incl. two-school null, wrong/used/expired codes, 5 guesses void, purposes independent), `test_password_reset.py` rewritten (11: email/username/unknown/phone start, full email flow, full SMS flow incl. single-use + login by reformatted phone, code page guard, activation happy path + dead link + garbage link), `test_login.py` +4 (email identifier, phone in two formats, unknown → generic error)
+- Checks clean, CSS rebuilt. Owner next: browser-walk login with email and phone, and an SMS reset (code shows in the console log in dev)
+- Commit: `feat: login and password reset by username, email or phone with one-time codes (T7e)`
 
 ### T15b documents VERIFIED by owner (2026-11-04, docs only)
 - Owner walked the documents pages and confirmed "DONE verified". T15b marked DONE (verified). No code changes; suite stands at 517 passed.
