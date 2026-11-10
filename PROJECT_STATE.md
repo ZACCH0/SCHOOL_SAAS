@@ -2,9 +2,9 @@
 
 Single source of truth for where the project stands. Rules for updating it are in `AGENTS.md` section 9.
 
-**Last updated:** 2026-11-10 (T7e login by phone/email + one-time codes built, 559 passed — owner to verify in browser; next: T16 security hardening)
+**Last updated:** 2026-11-10 (password show/hide eye toggle on all password fields; T7e browser verification in progress)
 **Current phase:** Modules 1-4 hard complete. Owner decision 2026-11-04: FINISH the remaining backend first (T15 → T7e → T16 → T17 → T18), THEN one final UI pass to canvas (dashboards incl. admin polish, teacher/parent/bursar matches, T7d/T10/T13 browser verifications roll in there). "Latest notices" card KEPT on the manager dashboard (owner decision 2026-11-04).
-**Current task:** T7e login by phone/email with one-time codes — DONE (unverified in browser).
+**Current task:** T7e login by phone/email with one-time codes — DONE (being verified in browser; SMS shows in the dev console by design, real provider at T18).
 **Next task (exact steps):** 1) owner browser verification of T7e: log in with an email and a phone, request a reset for a phone-only user (SMS code prints to the console log in dev), enter the code, set a new password 2) T16 security hardening → T17 REST API → T18 production deployment → final UI pass.
 **Current task:** T15b documents — DONE (unverified in browser). Owner to check: upload as owner, open as parent/teacher/bursar, take down; teacher must never see managers-only docs.
 **Next task (exact steps):** 1) fix the `AXES_COOLbOFF_TIME` typo in `config/settings/base.py:111` (`AXES_COOLOFF_TIME`) — lockout time was silently ignored; add/verify a test for the 15-min unlock 2) owner verification of T15b in the browser 3) T15 analytics is optional/later — next agreed backend task is T7e login by phone/email (spec → approval → build) → T16 → T17 → T18 → final UI pass.
@@ -53,6 +53,14 @@ Single source of truth for where the project stands. Rules for updating it are i
 | P3 | Parent portal step 3: report card HTML + PDF for linked parents | DONE (verified) | Owner opened/downloaded the PDF from the portal; label size fixed on their feedback. 20 portal tests; 376 passed |
 
 ## Task log (newest first)
+
+### Password show/hide eye toggle (2026-11-10, owner request during T7e verification, 559 passed)
+- Eye/eye-off button on every password box: login (T7e identifier + password), reset "Choose a new password" (both fields), forced temporary-password change page. Toggle flips the input type and swaps the icon; name discarded, `aria-label` follows state
+- Reusable component `templates/components/password_toggle_button.html` (takes `target_id`); delegated click handler in `templates/base.html` so it works on BOTH shells (login has no member nav or drawer script)
+- `force_change.html` rewritten from raw `{{ field }}` widgets (Django default markup, unstyled) to the same hand-written styled fields as `password_reset_confirm.html` — template-only, field names `new_password1/2` unchanged so all tests pass as-is
+- Files: `templates/base.html`, `templates/components/password_toggle_button.html` (new), `templates/accounts/{login,password_reset_confirm,force_change}.html`, `static/css/output.css`
+- Checks clean; CSS rebuilt (pr-10 etc. compiled); full suite 559 passed
+- Commit: `feat: password show/hide eye toggle on all password fields`
 
 ### T7e Login by phone/email + one-time codes finished and committed (2026-11-10, commit `3da4f47`, 559 passed)
 - Resumed the uncommitted T7e work found in the tree from the 2026-11-09 session and finished it

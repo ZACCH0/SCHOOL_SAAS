@@ -15,9 +15,29 @@
         {% for error in form.non_field_errors %}
           <p class="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800">{{ error }}</p>
         {% endfor %}
-        {% for field in form %}
-          {% include "components/form_field.html" with field=field %}
-        {% endfor %}
+        <div>
+          <label for="id_new_password1" class="block text-sm font-medium">New password</label>
+          <div class="relative">
+            <input type="password" name="new_password1" id="id_new_password1" required autocomplete="new-password"
+                   class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 pr-10 focus:border-brand-600 focus:outline-none">
+            {% include "components/password_toggle_button.html" with target_id="id_new_password1" %}
+          </div>
+          {% for error in form.new_password1.errors %}
+            <p class="mt-1 text-sm text-red-700">{{ error }}</p>
+          {% endfor %}
+        </div>
+        <div>
+          <label for="id_new_password2" class="block text-sm font-medium">Confirm password</label>
+          <div class="relative">
+            <input type="password" name="new_password2" id="id_new_password2" required autocomplete="new-password"
+                   class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 pr-10 focus:border-brand-600 focus:outline-none">
+            {% include "components/password_toggle_button.html" with target_id="id_new_password2" %}
+          </div>
+          {% for error in form.new_password2.errors %}
+            <p class="mt-1 text-sm text-red-700">{{ error }}</p>
+          {% endfor %}
+        </div>
+        <p class="text-xs text-slate-500">At least 8 characters. Not only numbers. Not a common password.</p>
         <button type="submit" class="rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700">Save new password</button>
       </form>
     </div>

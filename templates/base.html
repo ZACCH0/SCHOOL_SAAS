@@ -161,6 +161,22 @@
     </header>
   {% endif %}
 
+  <script>
+    document.addEventListener("click", function (event) {
+      var button = event.target.closest("[data-password-toggle]");
+      if (!button) return;
+      var input = document.getElementById(button.getAttribute("data-password-toggle"));
+      if (!input) return;
+      var hidden = input.type === "password";
+      input.type = hidden ? "text" : "password";
+      var eye = button.querySelector(".icon-eye");
+      var eyeOff = button.querySelector(".icon-eye-off");
+      if (eye) eye.classList.toggle("hidden", hidden);
+      if (eyeOff) eyeOff.classList.toggle("hidden", !hidden);
+      button.setAttribute("aria-label", hidden ? "Hide password" : "Show password");
+    });
+  </script>
+
   <div class="{% if request.membership and nav_items %}md:pl-60{% endif %}">
     <div class="{% if request.membership and nav_items %}mx-auto max-w-6xl px-4 py-6 md:py-8{% else %}mx-auto max-w-6xl px-4 py-6{% endif %}">
       {% include "partials/messages.html" %}
