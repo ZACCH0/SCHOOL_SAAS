@@ -35,6 +35,9 @@ INSTALLED_APPS = [
     "apps.announcements",
     "apps.timetable",
     "apps.documents",
+    "rest_framework",
+    "rest_framework.authtoken",
+    "apps.api",
 
 
 ]
@@ -120,6 +123,23 @@ LOGIN_REDIRECT_URL = "core:dashboard"
 LOGOUT_REDIRECT_URL = "core:home"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 PASSWORD_RESET_TIMEOUT = 60 * 60 * 3  # reset links expire after 3 hours
+
+# T17: small read-only API. Token auth for future phone apps, session auth
+# for the browser. Permissions are re-checked per endpoint in apps.api.
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.TokenAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
+    "DEFAULT_RENDERER_CLASSES": [
+        "rest_framework.renderers.JSONRenderer",
+    ],
+    "DEFAULT_PAGINATION_CLASS": None,
+    "TEST_REQUEST_DEFAULT_FORMAT": "json",
+}
 
 LOG_LEVEL = config("LOG_LEVEL", default="INFO")
 
