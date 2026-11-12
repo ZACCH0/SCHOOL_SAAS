@@ -2,10 +2,10 @@
 
 Single source of truth for where the project stands. Rules for updating it are in `AGENTS.md` section 9.
 
-**Last updated:** 2026-11-12 (T16 VERIFIED — backup dump seen under backups/, CI run #20 green; next T17 spec)
-**Current phase:** Modules 1-4 hard complete. Owner decision 2026-11-04: FINISH the remaining backend first (T15 → T7e → T16 → T17 → T18), THEN one final UI pass to canvas (dashboards incl. admin polish, teacher/parent/bursar matches, T7d/T10/T13 browser verifications roll in there). Agreed order 2026-11-12: T17 → T18 → T20 → T21 → final UI pass; Analytics stays optional (owner decides later).
-**Current task:** T16 security hardening — DONE (verified 2026-11-12). Evidence: `backups/school-saas-backup-20261110-140553.json` (688 KB) exists; branch pushed; GitHub Actions run #20 (commit `7ffdc5b`) completed successfully.
-**Next task (exact steps):** T17 REST API (only where useful): 1) draft spec (which endpoints, auth, roles) → owner approval. 2) Build to the approved spec with tests. 3) Then T18 production deployment on Render (wire the real SMS provider). 4) T20 profile photos, T21 public school pages, final UI pass.
+**Last updated:** 2026-11-12 (T17 REST API v1 built and committed `005a715`; owner to verify one endpoint in a terminal, then T18 deploy)
+**Current phase:** Modules 1-4 hard complete. Agreed order 2026-11-12: T17 (built) → T18 deploy → T20 profile photos → T21 public school pages → final UI pass; Analytics stays optional (owner decides later).
+**Current task:** T17 REST API (only where useful) — DONE (unverified): read-only API v1 at `/api/v1/` with token login; 37 tests; full suite 604 passed; commit `005a715`.
+**Next task (exact steps):** 1) Owner spot-checks the API: `python manage.py runserver`, then in a browser hit `/api/v1/me/` while logged in (JSON, no login wall) and optionally POST an identifier+password to `/api/v1/token/`. 2) T18 production deployment on Render (wire the real SMS provider). 3) T20 profile photos, T21 public school pages, final UI pass.
 
 ## Task boardStatuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 
@@ -32,7 +32,7 @@ Single source of truth for where the project stands. Rules for updating it are i
 | T14 | Dashboards, announcements, notifications, timetable | IN PROGRESS | T14a verified 2026-11-03 (`4800bdc`); T14b verified 2026-11-04 (36 timetable tests); T14c dashboards DONE (unverified) — 486 suite |
 | T15 | Documents, analytics, audit log — T15a audit log DONE (verified by owner), T15b documents DONE (verified by owner 2026-11-04) | IN PROGRESS (analytics optional/later) | 10 audit + 21 documents tests; 517 passed |
 | T16 | Security hardening (login attempt limiting, backups, file security, production settings) | DONE (verified) | db_backup + rotation + DEBUG guard, 7 tests, commit `12d30b3`; identifier-lockout regression test; H1-H5 already covered axes/audit/file security/prod settings. Verified 2026-11-12: real dump under `backups/` + GitHub Actions run #20 green |
-| T17 | REST API (only where useful) | TODO | Spec next |
+| T17 | REST API (only where useful) | DONE (unverified) | Read-only API v1: `apps/api` (token login + me/children/announcements/timetable/child-results), 37 tests, suite 604, commit `005a715` |
 | T18 | Production deployment (Render) and school pilot | TODO | CI workflow ready for `tests` on push |
 | T7e | Login by phone or email with password; one-time codes (email free, SMS paid) only for activation and password reset; per-school SMS credit and rate limits | DONE (owner verified 2026-11-10) | Commit `3da4f47`; 66 accounts tests; 559 suite |
 | H1 | Production settings file and clean `check --deploy` | DONE (verified) | 78 passed; check --deploy has no errors, only W005/W021 (HSTS subdomains and preload) left on purpose until deployment |
@@ -51,6 +51,16 @@ Single source of truth for where the project stands. Rules for updating it are i
 | P3 | Parent portal step 3: report card HTML + PDF for linked parents | DONE (verified) | Owner opened/downloaded the PDF from the portal; label size fixed on their feedback. 20 portal tests; 376 passed |
 
 ## Task log (newest first)
+
+### T17 REST API v1 built (2026-11-12, commit `005a715`, 604 passed)
+- Spec approved by owner: SMALL read-only API, token auth for future phone apps, 5 GET endpoints, no writes
+- New app `apps.api`, DRF 3.18.3 + `rest_framework.authtoken` added to settings and requirements.txt; mounted at `api/v1/` (namespace `api`); `REST_FRAMEWORK` block in base.py (Token + Session auth, IsAuthenticated, JSON-only renderer). Token table migrations (shipped by DRF) applied to the dev DB — `makemigrations --check` stays clean
+- `POST /api/v1/token/` — identifier (username/email/phone via T7e `resolve_user`) + password → token. Same lockout as the web: resolves to the username, so django-axes locks username+IP after 5 failures; failures all return the identical generic 400, and the locked-out 6th attempt returns the middleware's 429. KEY DRF LESSON: axes sets `axes_locked_out` on the request it is given — DRF's wrapper is a different object, so authenticate must be called with `request._request` (the raw HttpRequest) or AxesMiddleware never fires
+- Read endpoints (all GET, role re-checked per call, school from membership — never user input): `/me/` (any member: school/role/session/period), `/children/` (parent: linked children + fee owed via the portal's `_invoice_rows` + published count), `/children/<id>/results/` (parent: published results + average; GuardianLink re-checked; foreign/unlinked 404), `/announcements/` (same audience rule as the board, managers see all, latest 25), `/timetable/my/` (teacher: own lessons via `covering_slots`, grouped by day)
+- Membership rule for tokens (browser requests keep the middleware's session choice): a token request acts as the user's single active membership; 0 or several memberships → 403 "choose your school on the website first" (a device has no school chooser). Multi-school owners use the web app
+- Tests 37: `test_token.py` (10: username/email/phone identifiers, same token twice, generic 400s, ambiguous simulated via monkeypatch since the DB forbids duplicate emails, 5-failure 429 lockout, GET 405, token header works) + `test_read_endpoints.py` (27: /me/ role+session, bare user 403, multi-school 403, anonymous 401, full role matrix on children endpoints, my-timetable non-teachers 403, owed 10000.00 from 15000 invoice − 5000 payment, published rows + average 75.0, APPROVED-but-unpublished hidden, unlinked/foreign/non-numeric child 404s, audience filtering + archived hidden + tenant isolation, teacher sees only own lessons (colleague's + break absent), empty without current session)
+- Checks clean; no new migrations. Owner spot-check: hit `/api/v1/me/` logged in (JSON), or POST identifier+password to `/api/v1/token/`
+- Commit: `feat: REST API v1 - token login and five read-only parent teacher endpoints, 37 tests`
 
 ### T16 VERIFIED (2026-11-12, docs only)
 - Verified the owner's T16 verification directly: `backups/school-saas-backup-20261110-140553.json` (688 KB, 2026-11-10 14:05) exists on disk; `main` up to date with `origin/main`; GitHub Actions `tests` run #20 (commit `7ffdc5b`) **completed successfully** (all recent runs green). No code changes.
