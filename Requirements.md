@@ -49,7 +49,7 @@ Types: **REQ** = product requirement, **TECH** = implementation rule, **FUTURE**
 13. [ ] Analytics (student, academic, finance, attendance)
 14. [x] Audit log — read-only page built 2026-11-04, owner-verified in browser (DONE, verified): owner/admin only, newest first, search + date range, paginated 25/page, tenant isolated; the recording itself existed since H3
 15. [ ] REST API (only where it adds value)
-16. [ ] Production deployment (Render), backups, HTTPS — BACKUPS built 2026-11-10: `db_backup` management command (dumpdata JSON + rotation, refuses under DEBUG unless forced); scheduled nightly runs + Render deploy + real HTTPS cert are T18; CI (GitHub Actions testing every push) committed 2026-11-10
+16. [ ] Production deployment (Render), backups, HTTPS — BACKUPS built AND VERIFIED 2026-11-12: `db_backup` management command (dumpdata JSON + rotation, refuses under DEBUG unless forced) — real dump under `backups/`, GitHub Actions run green; scheduled nightly runs + Render deploy + real HTTPS cert are T18
 
 ## 5. Technical rules
 
