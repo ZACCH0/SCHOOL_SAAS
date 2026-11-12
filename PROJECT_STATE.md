@@ -2,10 +2,10 @@
 
 Single source of truth for where the project stands. Rules for updating it are in `AGENTS.md` section 9.
 
-**Last updated:** 2026-11-10 (T16 built; owner to verify db_backup in a terminal + green CI run after push, then T17 spec)
-**Current phase:** Modules 1-4 hard complete. Owner decision 2026-11-04: FINISH the remaining backend first (T15 → T7e → T16 → T17 → T18), THEN one final UI pass to canvas (dashboards incl. admin polish, teacher/parent/bursar matches, T7d/T10/T13 browser verifications roll in there). "Latest notices" card KEPT on the manager dashboard (owner decision 2026-11-04).
-**Current task:** T16 security hardening — DONE (unverified): db_backup command + lockout regression test committed `12d30b3`; GitHub Actions CI committed `188e453` (H6). Also closed a full-disk stall that had masked T16's completion.
-**Next task (exact steps):** 1) Owner verifies T16: run `python manage.py db_backup --force` in a terminal (dump file appears under `backups/`, rotation keeps 7) and push to GitHub so the `tests` workflow goes green. 2) Then T17 REST API (only where useful) spec → owner approval → build. 3) T18 production deployment on Render (wire the real SMS provider). 4) Final UI pass to canvas.
+**Last updated:** 2026-11-12 (T16 VERIFIED — backup dump seen under backups/, CI run #20 green; next T17 spec)
+**Current phase:** Modules 1-4 hard complete. Owner decision 2026-11-04: FINISH the remaining backend first (T15 → T7e → T16 → T17 → T18), THEN one final UI pass to canvas (dashboards incl. admin polish, teacher/parent/bursar matches, T7d/T10/T13 browser verifications roll in there). Agreed order 2026-11-12: T17 → T18 → T20 → T21 → final UI pass; Analytics stays optional (owner decides later).
+**Current task:** T16 security hardening — DONE (verified 2026-11-12). Evidence: `backups/school-saas-backup-20261110-140553.json` (688 KB) exists; branch pushed; GitHub Actions run #20 (commit `7ffdc5b`) completed successfully.
+**Next task (exact steps):** T17 REST API (only where useful): 1) draft spec (which endpoints, auth, roles) → owner approval. 2) Build to the approved spec with tests. 3) Then T18 production deployment on Render (wire the real SMS provider). 4) T20 profile photos, T21 public school pages, final UI pass.
 
 ## Task boardStatuses: `TODO`, `IN PROGRESS`, `DONE (unverified)`, `DONE (verified)`.
 
@@ -31,7 +31,7 @@ Single source of truth for where the project stands. Rules for updating it are i
 | T13 | Finance: fee structures, invoices, payments, receipts, balances | DONE (unverified by owner in browser) | T13a model, T13b services, T13c pages. 257 tests passed on 2026-10-26; idempotent payments, no overpay, audit, tenant isolation |
 | T14 | Dashboards, announcements, notifications, timetable | IN PROGRESS | T14a verified 2026-11-03 (`4800bdc`); T14b verified 2026-11-04 (36 timetable tests); T14c dashboards DONE (unverified) — 486 suite |
 | T15 | Documents, analytics, audit log — T15a audit log DONE (verified by owner), T15b documents DONE (verified by owner 2026-11-04) | IN PROGRESS (analytics optional/later) | 10 audit + 21 documents tests; 517 passed |
-| T16 | Security hardening (login attempt limiting, backups, file security, production settings) | DONE (unverified in terminal) | db_backup + rotation + DEBUG guard, 7 tests, commit `12d30b3`; identifier-lockout regression test; H1-H5 already covered axes/audit/file security/prod settings — final verification is the owner running `db_backup` once |
+| T16 | Security hardening (login attempt limiting, backups, file security, production settings) | DONE (verified) | db_backup + rotation + DEBUG guard, 7 tests, commit `12d30b3`; identifier-lockout regression test; H1-H5 already covered axes/audit/file security/prod settings. Verified 2026-11-12: real dump under `backups/` + GitHub Actions run #20 green |
 | T17 | REST API (only where useful) | TODO | Spec next |
 | T18 | Production deployment (Render) and school pilot | TODO | CI workflow ready for `tests` on push |
 | T7e | Login by phone or email with password; one-time codes (email free, SMS paid) only for activation and password reset; per-school SMS credit and rate limits | DONE (owner verified 2026-11-10) | Commit `3da4f47`; 66 accounts tests; 559 suite |
@@ -51,6 +51,11 @@ Single source of truth for where the project stands. Rules for updating it are i
 | P3 | Parent portal step 3: report card HTML + PDF for linked parents | DONE (verified) | Owner opened/downloaded the PDF from the portal; label size fixed on their feedback. 20 portal tests; 376 passed |
 
 ## Task log (newest first)
+
+### T16 VERIFIED (2026-11-12, docs only)
+- Verified the owner's T16 verification directly: `backups/school-saas-backup-20261110-140553.json` (688 KB, 2026-11-10 14:05) exists on disk; `main` up to date with `origin/main`; GitHub Actions `tests` run #20 (commit `7ffdc5b`) **completed successfully** (all recent runs green). No code changes.
+- Also agreed the build order 2026-11-12: T17 REST API → T18 deploy → T20 profile photos → T21 public school pages → final UI pass; Analytics stays optional.
+- Next: T17 REST API spec (endpoints, auth, roles) → owner approval → build.
 
 ### T16 security hardening closed as built; disk full found and cleared (2026-11-10, 567 passed)
 - Found the previous session's T16 work uncommitted in the tree, and 5 of its 7 backup tests failing. Root cause: `dumpdata` (called inside `db_backup`) needs DB access, and pytest-django refuses it without the `@pytest.mark.django_db` mark — the tests were missing it. Added the mark to the 5 data-touching tests; no app-logic change
